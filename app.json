@@ -1,24 +1,36 @@
 {
   "expo": {
-    "name": "Weather-App-Mobile",
-    "slug": "Weather-App-Mobile",
+    "name": "WX Weather",
+    "slug": "wx-weather",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mohamedsaber55.wxweather"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0b0d10",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.mohamedsaber55.wxweather"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow WX Weather to use your location to show local weather."
+        }
+      ]
+    ],
+    "backgroundColor": "#0b0d10"
   }
 }

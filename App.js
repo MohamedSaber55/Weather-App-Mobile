@@ -1,20 +1,68 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React from 'react'
+import { ActivityIndicator, View } from 'react-native'
+import { StatusBar } from 'expo-status-bar'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { useFonts } from 'expo-font'
+import {
+  IBMPlexMono_400Regular,
+  IBMPlexMono_500Medium,
+  IBMPlexMono_600SemiBold,
+} from '@expo-google-fonts/ibm-plex-mono'
+import {
+  IBMPlexSansCondensed_400Regular,
+  IBMPlexSansCondensed_500Medium,
+  IBMPlexSansCondensed_600SemiBold,
+} from '@expo-google-fonts/ibm-plex-sans-condensed'
+import { SettingsProvider, useSettings } from './src/context/SettingsContext'
+import { FavoritesProvider } from './src/context/FavoritesContext'
+import Dashboard from './src/screens/Dashboard'
+import { DARK, useTheme } from './src/theme'
 
-export default function App() {
+function Shell() {
+  const theme = useTheme()
+  const { loaded } = useSettings()
+
+  if (!loaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: theme.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={theme.amber} />
+      </View>
+    )
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+    <>
+      <StatusBar style={theme.mode === 'light' ? 'dark' : 'light'} backgroundColor={theme.bg} />
+      <Dashboard />
+    </>
+  )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default function App() {
+  const [fontsLoaded] = useFonts({
+    IBMPlexMono_400Regular,
+    IBMPlexMono_500Medium,
+    IBMPlexMono_600SemiBold,
+    IBMPlexSansCondensed_400Regular,
+    IBMPlexSansCondensed_500Medium,
+    IBMPlexSansCondensed_600SemiBold,
+  })
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: DARK.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={DARK.amber} />
+      </View>
+    )
+  }
+
+  return (
+    <SafeAreaProvider>
+      <SettingsProvider>
+        <FavoritesProvider>
+          <Shell />
+        </FavoritesProvider>
+      </SettingsProvider>
+    </SafeAreaProvider>
+  )
+}
