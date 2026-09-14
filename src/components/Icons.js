@@ -8,7 +8,7 @@ const C = (cx, cy, r) => ({ cx, cy, r })
 const CLOUD_HIGH = 'M7 14h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.6 5.1 4.5 4.5 0 0 0 7 14z'
 
 // same geometry as the web app's icon set
-const ICONS = {
+export const ICON_PATHS = {
   search: [C(11, 11, 7), P('M20 20l-3.5-3.5')],
   locate: [C(12, 12, 7), C(12, 12, 2.5), P('M12 2v3M12 19v3M2 12h3M19 12h3')],
   sliders: [P('M4 7h10M18 7h2M4 17h4M12 17h8'), C(16, 7, 2), C(10, 17, 2)],
@@ -49,7 +49,7 @@ const ICONS = {
 export function Icon({ name, size = 16, color, strokeWidth = 1.6, fill = 'none' }) {
   const theme = useTheme()
   const stroke = color || theme.muted
-  const parts = ICONS[name] || []
+  const parts = ICON_PATHS[name] || []
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       {parts.map((part, i) =>

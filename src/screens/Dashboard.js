@@ -28,6 +28,9 @@ import { useWeather } from '../hooks/useWeather'
 import { useSettings } from '../context/SettingsContext'
 import { useFavorites } from '../context/FavoritesContext'
 import { getSearchResults } from '../lib/api'
+import { cacheSummary } from '../widget/data'
+import { registerBackgroundRefresh, updateAllWidgets } from '../widget/refresh'
+import { syncStatusBarNotification } from '../lib/notifications'
 import { addMinutes, clockHours, dateStamp, formatTime, speedLabel } from '../lib/units'
 
 const DEFAULT_CITY = 'beni suef'
@@ -103,6 +106,25 @@ export default function Dashboard() {
   const appState = useRef(AppState.currentState)
 
   const { status, data, error, stale, reload, refresh } = useWeather(query)
+
+  useEffect(() => {
+    registerBackgroundRefresh()
+  }, [])
+
+  useEffect(() => {
+    if (!data) return
+    let cancelled = false
+    cacheSummary(data, settings)
+      .then(summary => {
+        if (cancelled || !summary) return
+        updateAllWidgets(summary)
+        return syncStatusBarNotification(summary)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [data, settings])
 
   useEffect(() => {
     AsyncStorage.getItem(CITY_KEY)

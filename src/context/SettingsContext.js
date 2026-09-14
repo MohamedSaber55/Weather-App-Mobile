@@ -10,6 +10,7 @@ const DEFAULTS = {
   pressureUnit: 'hPa',
   hourFormat: 24,
   theme: 'dark',
+  statusBar: false,
 }
 
 const SettingsContext = createContext(null)

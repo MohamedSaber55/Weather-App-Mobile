@@ -29,7 +29,76 @@
         {
           "locationWhenInUsePermission": "Allow WX Weather to use your location to show local weather."
         }
-      ]
+      ],
+      "expo-background-task",
+      [
+        "react-native-android-widget",
+        {
+          "fonts": [
+            "./assets/fonts/IBMPlexMono-Regular.ttf",
+            "./assets/fonts/IBMPlexMono-Medium.ttf",
+            "./assets/fonts/IBMPlexSansCondensed-SemiBold.ttf"
+          ],
+          "widgets": [
+            {
+              "name": "WxCompact",
+              "label": "WX \u00b7 Temperature",
+              "description": "Temperature and today's high/low",
+              "minWidth": "110dp",
+              "minHeight": "40dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 1,
+              "resizeMode": "horizontal",
+              "updatePeriodMillis": 1800000,
+              "previewImage": "./assets/widget-previews/compact.png"
+            },
+            {
+              "name": "WxCurrent",
+              "label": "WX \u00b7 Current",
+              "description": "Current conditions panel",
+              "minWidth": "180dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 3,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000,
+              "previewImage": "./assets/widget-previews/current.png"
+            },
+            {
+              "name": "WxHourly",
+              "label": "WX \u00b7 Next hours",
+              "description": "The next six hours",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000,
+              "previewImage": "./assets/widget-previews/hourly.png"
+            },
+            {
+              "name": "WxForecast",
+              "label": "WX \u00b7 Forecast",
+              "description": "Current conditions, four days, wind, UV and air quality",
+              "minWidth": "250dp",
+              "minHeight": "180dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 3,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000,
+              "previewImage": "./assets/widget-previews/forecast.png"
+            }
+          ]
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#f2af48"
+        }
+      ],
+      "./plugins/withAndroidBuildFixes"
     ],
     "backgroundColor": "#0b0d10"
   }
