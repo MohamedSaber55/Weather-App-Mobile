@@ -38,6 +38,38 @@ Sun arc · Radar.
 - The search screen (magnifier) finds cities; the star tab saves the current one;
   settings (sliders) holds units, clock, theme and "use my current location".
 
+## Home screen widgets
+
+Four resizable widgets, all tapping through to the app:
+
+| Widget | Size | Shows |
+|---|---|---|
+| Temperature | 2 x 1 | icon, temperature, city, today's high/low |
+| Current | 3 x 2 | big temperature, condition, feels-like, high/low |
+| Next hours | 4 x 2 | current reading plus the next six hours |
+| Forecast | 4 x 3 | current, four days with rain chance, wind/humidity/UV/AQI |
+
+Add them by long-pressing the home screen, or from Settings, which can pin any
+of them directly. Android refreshes widgets every 30 minutes at most; the app
+also pushes an update every time it loads fresh data, and a background task
+(15-minute floor) refreshes them while the app is closed. Widgets read the same
+cached reading the app stores, so they rarely spend an API call of their own.
+
+Widget rendering lives in `src/widget/`: `WidgetViews.js` (layouts, built from
+the app's own icon paths as SVG), `data.js` (shared cache and summary),
+`taskHandler.js` (what Android calls when a widget updates) and `refresh.js`
+(background task plus push-to-all-widgets).
+
+## Temperature in the status bar
+
+Settings has a toggle that keeps a silent, ongoing notification showing
+`32°C · Sunny` with the city, feels-like, high/low, UV and air quality. It asks
+for notification permission the first time and is off by default. The same
+refresh paths that update the widgets update this too.
+
+Battery savers on some phones (Xiaomi, Oppo, Samsung's deep sleep) can delay or
+stop background refreshes — opening the app always brings both up to date.
+
 ## Data
 
 [WeatherAPI.com](https://www.weatherapi.com) for weather, air quality and alerts;
