@@ -95,12 +95,12 @@ phone but roughly triples the size (~29 MB vs ~80 MB).
    externalNativeBuild { cmake { buildStagingDirectory = file("C:/x") } }
    ```
 
-   and build from `C:\wndroid`. (Regenerate those after any `expo prebuild`,
+   and build from `C:\w\android`. (Regenerate those after any `expo prebuild`,
    which overwrites `android/`.)
 
 2. **Don't map the project to a drive root** (`subst W: <project>`). Expo's
    autolinking walks *up* for `package.json` and never checks the root itself,
-   so it fails with `Couldn't find "package.json" up from path "W:ndroid"`.
+   so it fails with `Couldn't find "package.json" up from path "W:\android"`.
    A junction one level down, like `C:\w`, avoids this.
 
 ### Signing
