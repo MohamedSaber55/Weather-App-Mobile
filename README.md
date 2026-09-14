@@ -56,10 +56,62 @@ of the web app's files — plain JavaScript with no DOM use. Fix a rule (an
 advisory, the US EPA air-quality scale, a condition code) in one place and copy
 it to the other.
 
-## Building an installable app
+## Building an installable APK
 
-Expo Go is for development. For a real APK or an App Store build:
+Android builds need a JDK 17 and the Android SDK; Gradle pulls the NDK itself
+(about 3.5 GB in total the first time). No Android Studio required.
 
 ```bash
-npx eas build -p android --profile preview   # needs a free Expo account
+npx expo prebuild -p android     # generates android/
+cd android
+./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
+```
+
+The APK lands in `android/app/build/outputs/apk/release/`. Dropping
+`-PreactNativeArchitectures` builds for all four CPU types — it runs on any
+phone but roughly triples the size (~29 MB vs ~80 MB).
+
+### On Windows: two things bite
+
+1. **The 260-character path limit.** CMake mirrors the full source path inside
+   its object directory, so `node_modules/react-native-safe-area-context/...`
+   ends up well past the limit and `ninja` fails with `Stat(...)`. Either enable
+   long paths once (admin):
+
+   ```
+   reg add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v LongPathsEnabled /t REG_DWORD /d 1 /f
+   ```
+
+   …or, without admin, shorten both halves of the path — build through a short
+   junction and send CMake's output elsewhere:
+
+   ```
+   mklink /J C:\w "<this folder>"
+   ```
+
+   then in `android/app/build.gradle`, inside `android { }`:
+
+   ```gradle
+   externalNativeBuild { cmake { buildStagingDirectory = file("C:/x") } }
+   ```
+
+   and build from `C:\wndroid`. (Regenerate those after any `expo prebuild`,
+   which overwrites `android/`.)
+
+2. **Don't map the project to a drive root** (`subst W: <project>`). Expo's
+   autolinking walks *up* for `package.json` and never checks the root itself,
+   so it fails with `Couldn't find "package.json" up from path "W:ndroid"`.
+   A junction one level down, like `C:\w`, avoids this.
+
+### Signing
+
+`android/app/wx-release.keystore` with its password in
+`android/keystore.properties` — both gitignored. Keep backups: Android refuses
+to install an update signed with a different key.
+
+For a Play Store build or an iOS build, Expo's cloud service does it on Linux
+(no path-limit games):
+
+```bash
+npx eas build -p android --profile production   # needs a free Expo account
 ```
