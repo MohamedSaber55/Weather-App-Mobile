@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { requestPinWidget } from 'react-native-android-widget'
 import { Icon } from './Icons'
 import { IconButton, Segmented } from './Tile'
 import { FONTS, label, RADIUS, useStyles } from '../theme'
@@ -29,7 +28,7 @@ const makeStyles = t => ({
     borderBottomColor: t.border,
   },
   title: label(t, 12),
-  body: { padding: 16, gap: 18, paddingBottom: 28 },
+  body: { padding: 16, gap: 18, paddingBottom: 40 },
   setting: { gap: 8 },
   settingLabel: { ...label(t, 10), color: t.dim },
   hint: { fontFamily: FONTS.cond, fontSize: 13, lineHeight: 18, color: t.muted },
@@ -45,20 +44,6 @@ const makeStyles = t => ({
     backgroundColor: t.sunken,
   },
   buttonText: { ...label(t, 12), color: t.text },
-  widgetRow: { flexDirection: 'row', gap: 8 },
-  widgetChip: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: t.border,
-    borderRadius: 4,
-    backgroundColor: t.sunken,
-  },
-  widgetChipLabel: { ...label(t, 10), color: t.text },
-  widgetChipSize: { ...label(t, 9), color: t.dim },
   divider: { height: 1, backgroundColor: t.border, marginVertical: 2 },
 })
 
@@ -71,12 +56,6 @@ const CHOICES = [
   { key: 'hourFormat', label: 'Clock', options: [{ value: 24, label: '24 h' }, { value: 12, label: '12 h' }] },
 ]
 
-const WIDGETS = [
-  { name: 'WxCompact', label: 'Temperature', size: '2 × 1' },
-  { name: 'WxCurrent', label: 'Current', size: '3 × 2' },
-  { name: 'WxHourly', label: 'Next hours', size: '4 × 2' },
-  { name: 'WxForecast', label: 'Forecast', size: '4 × 3' },
-]
 
 export default function SettingsSheet({ visible, onClose, onUseCurrentLocation, locating }) {
   const { styles, theme } = useStyles(makeStyles)
@@ -102,19 +81,6 @@ export default function SettingsSheet({ visible, onClose, onUseCurrentLocation, 
     }
   }
 
-  const addWidget = async widgetName => {
-    try {
-      const accepted = await requestPinWidget({ widgetName })
-      setNote(
-        accepted
-          ? 'Confirm the placement on your home screen.'
-          : 'This launcher cannot add widgets from inside apps — long-press the home screen instead.'
-      )
-    } catch {
-      setNote('Could not open the widget picker — long-press your home screen instead.')
-    }
-  }
-
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close settings">
@@ -124,7 +90,7 @@ export default function SettingsSheet({ visible, onClose, onUseCurrentLocation, 
               <Text style={styles.title}>Settings</Text>
               <IconButton name="close" onPress={onClose} accessibilityLabel="Close settings" />
             </View>
-            <ScrollView contentContainerStyle={styles.body}>
+            <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} bounces={false}>
               {CHOICES.map(choice => (
                 <View key={choice.key} style={styles.setting}>
                   <Text style={styles.settingLabel}>{choice.label}</Text>
@@ -147,26 +113,6 @@ export default function SettingsSheet({ visible, onClose, onUseCurrentLocation, 
                   onChange={setStatusBar}
                   accessibilityLabel="Temperature in the status bar"
                 />
-              </View>
-
-              <View style={styles.setting}>
-                <Text style={styles.settingLabel}>Home screen widgets</Text>
-                <View style={styles.widgetRow}>
-                  {WIDGETS.slice(0, 2).map(widget => (
-                    <Pressable key={widget.name} style={styles.widgetChip} onPress={() => addWidget(widget.name)} accessibilityRole="button">
-                      <Text style={styles.widgetChipLabel}>{widget.label}</Text>
-                      <Text style={styles.widgetChipSize}>{widget.size}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-                <View style={styles.widgetRow}>
-                  {WIDGETS.slice(2).map(widget => (
-                    <Pressable key={widget.name} style={styles.widgetChip} onPress={() => addWidget(widget.name)} accessibilityRole="button">
-                      <Text style={styles.widgetChipLabel}>{widget.label}</Text>
-                      <Text style={styles.widgetChipSize}>{widget.size}</Text>
-                    </Pressable>
-                  ))}
-                </View>
               </View>
 
               {note ? <Text style={styles.hint}>{note}</Text> : null}
