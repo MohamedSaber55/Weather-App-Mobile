@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Modal, Pressable, Text, TextInput, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { Icon } from './Icons'
 import { IconButton } from './Tile'
 import { label, mono, RADIUS, useStyles } from '../theme'
@@ -87,7 +87,14 @@ export default function SearchOverlay({ visible, onClose, onSelect }) {
   }
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      onRequestClose={onClose}
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
+      <SafeAreaProvider>
       <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
         <View style={styles.bar}>
           <View style={styles.field}>
@@ -141,6 +148,7 @@ export default function SearchOverlay({ visible, onClose, onSelect }) {
           )}
         />
       </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   )
 }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Icon } from './Icons'
 import { IconButton, Segmented } from './Tile'
 import { FONTS, label, RADIUS, useStyles } from '../theme'
@@ -16,7 +16,7 @@ const makeStyles = t => ({
     borderTopColor: t.border,
     borderTopLeftRadius: RADIUS * 2,
     borderTopRightRadius: RADIUS * 2,
-    maxHeight: '90%',
+    maxHeight: '86%',
   },
   head: {
     flexDirection: 'row',
@@ -28,7 +28,7 @@ const makeStyles = t => ({
     borderBottomColor: t.border,
   },
   title: label(t, 12),
-  body: { padding: 16, gap: 18, paddingBottom: 40 },
+  body: { padding: 16, gap: 18 },
   setting: { gap: 8 },
   settingLabel: { ...label(t, 10), color: t.dim },
   hint: { fontFamily: FONTS.cond, fontSize: 13, lineHeight: 18, color: t.muted },
@@ -56,10 +56,12 @@ const CHOICES = [
   { key: 'hourFormat', label: 'Clock', options: [{ value: 24, label: '24 h' }, { value: 12, label: '12 h' }] },
 ]
 
-
-export default function SettingsSheet({ visible, onClose, onUseCurrentLocation, locating }) {
+// Android renders a Modal in its own window, so the app's safe-area insets do not
+// reach it — read them in here, or the last row hides behind the navigation bar.
+function Sheet({ onClose, onUseCurrentLocation, locating }) {
   const { styles, theme } = useStyles(makeStyles)
   const { settings, update } = useSettings()
+  const insets = useSafeAreaInsets()
   const [note, setNote] = useState(null)
 
   const setStatusBar = async value => {
@@ -82,49 +84,66 @@ export default function SettingsSheet({ visible, onClose, onUseCurrentLocation, 
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close settings">
-        <Pressable style={styles.sheet} onPress={() => {}}>
-          <SafeAreaView edges={['bottom']}>
-            <View style={styles.head}>
-              <Text style={styles.title}>Settings</Text>
-              <IconButton name="close" onPress={onClose} accessibilityLabel="Close settings" />
+    <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close settings">
+      <Pressable style={[styles.sheet, { marginBottom: insets.bottom }]} onPress={() => {}}>
+        <View style={styles.head}>
+          <Text style={styles.title}>Settings</Text>
+          <IconButton name="close" onPress={onClose} accessibilityLabel="Close settings" />
+        </View>
+        <ScrollView
+          contentContainerStyle={[styles.body, { paddingBottom: 24 + insets.bottom }]}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          {CHOICES.map(choice => (
+            <View key={choice.key} style={styles.setting}>
+              <Text style={styles.settingLabel}>{choice.label}</Text>
+              <Segmented
+                options={choice.options}
+                value={settings[choice.key]}
+                onChange={value => update({ [choice.key]: value })}
+                accessibilityLabel={choice.label}
+              />
             </View>
-            <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false} bounces={false}>
-              {CHOICES.map(choice => (
-                <View key={choice.key} style={styles.setting}>
-                  <Text style={styles.settingLabel}>{choice.label}</Text>
-                  <Segmented
-                    options={choice.options}
-                    value={settings[choice.key]}
-                    onChange={value => update({ [choice.key]: value })}
-                    accessibilityLabel={choice.label}
-                  />
-                </View>
-              ))}
+          ))}
 
-              <View style={styles.divider} />
+          <View style={styles.divider} />
 
-              <View style={styles.setting}>
-                <Text style={styles.settingLabel}>Temperature in the status bar</Text>
-                <Segmented
-                  options={[{ value: true, label: 'On' }, { value: false, label: 'Off' }]}
-                  value={Boolean(settings.statusBar)}
-                  onChange={setStatusBar}
-                  accessibilityLabel="Temperature in the status bar"
-                />
-              </View>
+          <View style={styles.setting}>
+            <Text style={styles.settingLabel}>Temperature in the status bar</Text>
+            <Segmented
+              options={[{ value: true, label: 'On' }, { value: false, label: 'Off' }]}
+              value={Boolean(settings.statusBar)}
+              onChange={setStatusBar}
+              accessibilityLabel="Temperature in the status bar"
+            />
+          </View>
 
-              {note ? <Text style={styles.hint}>{note}</Text> : null}
+          {note ? <Text style={styles.hint}>{note}</Text> : null}
 
-              <Pressable style={styles.button} onPress={onUseCurrentLocation} disabled={locating} accessibilityRole="button">
-                <Icon name={locating ? 'rotate' : 'locate'} size={14} color={theme.text} />
-                <Text style={styles.buttonText}>{locating ? 'Locating…' : 'Use my current location'}</Text>
-              </Pressable>
-            </ScrollView>
-          </SafeAreaView>
-        </Pressable>
+          <Pressable style={styles.button} onPress={onUseCurrentLocation} disabled={locating} accessibilityRole="button">
+            <Icon name={locating ? 'rotate' : 'locate'} size={14} color={theme.text} />
+            <Text style={styles.buttonText}>{locating ? 'Locating…' : 'Use my current location'}</Text>
+          </Pressable>
+        </ScrollView>
       </Pressable>
+    </Pressable>
+  )
+}
+
+export default function SettingsSheet({ visible, onClose, onUseCurrentLocation, locating }) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
+      <SafeAreaProvider>
+        <Sheet onClose={onClose} onUseCurrentLocation={onUseCurrentLocation} locating={locating} />
+      </SafeAreaProvider>
     </Modal>
   )
 }
