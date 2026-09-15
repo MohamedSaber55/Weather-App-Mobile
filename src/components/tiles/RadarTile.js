@@ -99,7 +99,7 @@ const makeStyles = t => ({
   opacity: { ...mono(t, 11), color: t.muted, textTransform: 'uppercase' },
 })
 
-export default function RadarTile({ lat, lon, name }) {
+export default function RadarTile({ lat, lon, name, offline = false }) {
   const { styles, theme } = useStyles(makeStyles)
   const webRef = useRef(null)
   const [meta, setMeta] = useState(null)
@@ -112,6 +112,7 @@ export default function RadarTile({ lat, lon, name }) {
   const html = useMemo(() => buildHtml({ lat, lon, name, theme }), [lat, lon, name, theme])
 
   useEffect(() => {
+    if (offline) return undefined
     let cancelled = false
     fetch(RAINVIEWER_META)
       .then(r => r.json())
@@ -122,7 +123,7 @@ export default function RadarTile({ lat, lon, name }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [offline])
 
   useEffect(() => {
     setFrameIdx(latest)
@@ -142,15 +143,20 @@ export default function RadarTile({ lat, lon, name }) {
 
   const frame = frames[frameIdx]
   const offsetMin = frame ? Math.round((frame.time * 1000 - Date.now()) / 60000) : null
-  const metaLabel =
-    offsetMin == null ? 'RainViewer' : `RainViewer · ${offsetMin > 0 ? '+' : '−'}${Math.abs(offsetMin)} min`
+  const metaLabel = offline
+    ? 'Offline'
+    : offsetMin == null ? 'RainViewer' : `RainViewer · ${offsetMin > 0 ? '+' : '−'}${Math.abs(offsetMin)} min`
 
   const cycleOpacity = () => setOpacity(OPACITY_STEPS[(OPACITY_STEPS.indexOf(opacity) + 1) % OPACITY_STEPS.length])
 
   return (
     <Tile label="Radar" meta={metaLabel}>
       <View style={styles.map}>
-        {WebView ? (
+        {offline ? (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <Note>The radar map needs a connection. It will load once you are back online.</Note>
+          </View>
+        ) : WebView ? (
           <WebView
             ref={webRef}
             originWhitelist={['*']}

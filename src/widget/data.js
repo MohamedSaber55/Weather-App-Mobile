@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as Network from 'expo-network'
 import { getWeather } from '../lib/api'
 import { conditionIconName } from '../components/Icons'
 import { aqiLevel, uvLevel } from '../lib/conditions'
@@ -105,12 +106,21 @@ export async function loadWidgetData({ force = false } = {}) {
   if (!force && cached && Date.now() - (cached.savedAt || 0) < FRESH_MS) return cached
 
   try {
+    const network = await Network.getNetworkStateAsync()
+    if (network.isConnected === false || network.isInternetReachable === false) {
+      return cached ? { ...cached, offline: true } : null
+    }
+  } catch {
+    // connectivity unknown — try the request anyway
+  }
+
+  try {
     const settings = await readSettings()
     const city = (await AsyncStorage.getItem(CITY_KEY)) || DEFAULT_CITY
     const data = await getWeather(city, { days: 4, aqi: true, alerts: false })
     const summary = await cacheSummary(data, settings)
     return summary || cached
   } catch {
-    return cached
+    return cached ? { ...cached, offline: true } : null
   }
 }

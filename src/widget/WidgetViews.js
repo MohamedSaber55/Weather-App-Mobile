@@ -46,6 +46,9 @@ const Mono = ({ children, theme, size = 12, color, medium }) => (
   />
 )
 
+// when the reading came from cache without a connection, label it
+const stamp = d => (d.offline ? `OFF ${d.updated}` : `UPD ${d.updated}`)
+
 const shell = theme => ({
   height: 'match_parent',
   width: 'match_parent',
@@ -92,7 +95,7 @@ function Current({ d, theme }) {
     <FlexWidget style={shell(theme)} clickAction="OPEN_APP" accessibilityLabel={`${d.city}, ${d.temp} degrees, ${d.condition}`}>
       <FlexWidget style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: 'match_parent' }}>
         <Label theme={theme} size={10} color={theme.text}>{d.city}</Label>
-        <Mono theme={theme} size={9} color={theme.dim}>{`UPD ${d.updated}`}</Mono>
+        <Mono theme={theme} size={9} color={theme.dim}>{stamp(d)}</Mono>
       </FlexWidget>
 
       <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: 'match_parent', marginTop: 6 }}>
@@ -120,7 +123,7 @@ function Hourly({ d, theme }) {
           <Mono theme={theme} size={22} medium>{`${d.temp}°`}</Mono>
           <Label theme={theme} size={10}>{d.city}</Label>
         </FlexWidget>
-        <Mono theme={theme} size={9} color={theme.dim}>{`UPD ${d.updated}`}</Mono>
+        <Mono theme={theme} size={9} color={theme.dim}>{stamp(d)}</Mono>
       </FlexWidget>
 
       <FlexWidget
@@ -160,7 +163,7 @@ function Forecast({ d, theme }) {
         </FlexWidget>
         <FlexWidget style={{ flexDirection: 'column', alignItems: 'flex-end' }}>
           <Mono theme={theme} size={11} color={theme.muted}>{`H ${d.hi}  L ${d.lo}`}</Mono>
-          <Mono theme={theme} size={9} color={theme.dim}>{`UPD ${d.updated}`}</Mono>
+          <Mono theme={theme} size={9} color={theme.dim}>{stamp(d)}</Mono>
         </FlexWidget>
       </FlexWidget>
 

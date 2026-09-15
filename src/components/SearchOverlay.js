@@ -6,6 +6,7 @@ import { IconButton } from './Tile'
 import { label, mono, RADIUS, useStyles } from '../theme'
 import { getSearchResults } from '../lib/api'
 import { useFavorites } from '../context/FavoritesContext'
+import { useNetworkState } from 'expo-network'
 
 const makeStyles = t => ({
   screen: { flex: 1, backgroundColor: t.bg },
@@ -34,6 +35,8 @@ const makeStyles = t => ({
 export default function SearchOverlay({ visible, onClose, onSelect }) {
   const { styles, theme } = useStyles(makeStyles)
   const { recents } = useFavorites()
+  const network = useNetworkState()
+  const noConnection = network?.isConnected === false || network?.isInternetReachable === false
   const [text, setText] = useState('')
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
@@ -118,7 +121,13 @@ export default function SearchOverlay({ visible, onClose, onSelect }) {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={
             <Text style={styles.empty}>
-              {showRecents ? 'Type at least 2 characters' : loading ? 'Searching…' : `No places match “${text.trim()}”`}
+              {noConnection
+                ? 'No connection — searching for new cities needs the internet. Saved and recent places still work.'
+                : showRecents
+                  ? 'Type at least 2 characters'
+                  : loading
+                    ? 'Searching…'
+                    : `No places match “${text.trim()}”`}
             </Text>
           }
           renderItem={({ item }) => (

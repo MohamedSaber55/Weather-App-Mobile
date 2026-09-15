@@ -24,6 +24,7 @@ import {
 import { Icon } from '../components/Icons'
 import { Note, Tile } from '../components/Tile'
 import { GAP, label, mono, RADIUS, useStyles } from '../theme'
+import { useNetworkState } from 'expo-network'
 import { useWeather } from '../hooks/useWeather'
 import { useSettings } from '../context/SettingsContext'
 import { useFavorites } from '../context/FavoritesContext'
@@ -36,6 +37,18 @@ import { addMinutes, clockHours, dateStamp, formatTime, speedLabel } from '../li
 const DEFAULT_CITY = 'beni suef'
 const CITY_KEY = 'city'
 const REFRESH_MS = 10 * 60 * 1000
+
+// "4 min ago" / "2 h ago" — how old the reading on screen is
+function ago(timestamp) {
+  if (!timestamp) return 'a while ago'
+  const minutes = Math.max(0, Math.round((Date.now() - timestamp) / 60000))
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes} min ago`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours} h ago`
+  const days = Math.round(hours / 24)
+  return days === 1 ? 'yesterday' : `${days} days ago`
+}
 
 // WeatherAPI accepts an id, "lat,lon" or a plain name — prefer the most precise one
 function placeQuery(place) {
@@ -105,7 +118,10 @@ export default function Dashboard() {
   const [width, setWidth] = useState(0)
   const appState = useRef(AppState.currentState)
 
-  const { status, data, error, stale, reload, refresh } = useWeather(query)
+  const { status, data, error, stale, cachedAt, offline, reload, refresh } = useWeather(query)
+  const network = useNetworkState()
+  const noConnection =
+    offline || network?.isConnected === false || network?.isInternetReachable === false
 
   useEffect(() => {
     registerBackgroundRefresh()
@@ -135,7 +151,9 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
-    const timer = setInterval(refresh, REFRESH_MS)
+    const timer = setInterval(() => {
+      if (!noConnection) refresh()
+    }, REFRESH_MS)
     const sub = AppState.addEventListener('change', next => {
       if (appState.current.match(/inactive|background/) && next === 'active') refresh()
       appState.current = next
@@ -144,7 +162,13 @@ export default function Dashboard() {
       clearInterval(timer)
       sub.remove()
     }
-  }, [refresh])
+  }, [refresh, noConnection])
+
+  const wasOffline = useRef(false)
+  useEffect(() => {
+    if (wasOffline.current && !noConnection) refresh()
+    wasOffline.current = noConnection
+  }, [noConnection, refresh])
 
   const applyQuery = useCallback(value => {
     const next = value || DEFAULT_CITY
@@ -242,11 +266,19 @@ export default function Dashboard() {
               : 'Connecting…'}
           </Text>
           <View style={styles.live}>
-            <View style={[styles.dot, status === 'loading' && { opacity: 0.4 }]} />
+            <View
+              style={[
+                styles.dot,
+                status === 'loading' && { opacity: 0.4 },
+                noConnection && { backgroundColor: theme.dim },
+              ]}
+            />
             <Text style={styles.liveText}>
-              {updated
-                ? `Upd ${formatTime(updated, settings.hourFormat)} · Next ${addMinutes(updated, 15, settings.hourFormat)}`
-                : 'Fetching…'}
+              {noConnection
+                ? `Offline · ${ago(cachedAt)}`
+                : updated
+                  ? `Upd ${formatTime(updated, settings.hourFormat)} · Next ${addMinutes(updated, 15, settings.hourFormat)}`
+                  : 'Fetching…'}
             </Text>
           </View>
         </View>
@@ -261,7 +293,17 @@ export default function Dashboard() {
           </View>
         ) : null}
 
-        {error && data ? (
+        {noConnection && data ? (
+          <View style={styles.notice}>
+            <Icon name="alert" size={14} color={theme.muted} />
+            <Text style={styles.noticeText}>{`No connection — showing the reading from ${ago(cachedAt)}`}</Text>
+            <Pressable onPress={reload} accessibilityRole="button">
+              <Text style={[styles.retryText, { color: theme.amber }]}>Retry</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {error && data && !noConnection ? (
           <View style={styles.notice}>
             <Icon name="alert" size={14} color={theme.amber} />
             <Text style={styles.noticeText}>{error.message}</Text>
@@ -279,8 +321,12 @@ export default function Dashboard() {
         ) : null}
 
         {status === 'error' && !data ? (
-          <Tile label="Connection error" meta="No data">
-            <Note>{error?.message || 'The weather service did not respond.'}</Note>
+          <Tile label={noConnection ? 'No connection' : 'Connection error'} meta="No data">
+            <Note>
+              {noConnection
+                ? 'This is the first run without a connection, so there is nothing saved to show yet. Connect and pull down to refresh.'
+                : error?.message || 'The weather service did not respond.'}
+            </Note>
             <Pressable style={styles.retry} onPress={reload} accessibilityRole="button">
               <Icon name="rotate" size={13} color={theme.text} />
               <Text style={styles.retryText}>Retry</Text>
@@ -325,7 +371,7 @@ export default function Dashboard() {
 
             <AdvisoriesTile current={current} day={today.day} />
             <SunTile astro={today.astro} localtime={location.localtime} settings={settings} width={width - 28} />
-            <RadarTile lat={location.lat} lon={location.lon} name={location.name} />
+            <RadarTile lat={location.lat} lon={location.lon} name={location.name} offline={noConnection} />
 
             <View style={styles.footer}>
               <Text style={styles.footerText} numberOfLines={1}>

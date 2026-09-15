@@ -57,6 +57,7 @@ export async function syncStatusBarNotification(data) {
 
   await ensureChannel()
   const extras = [
+    data.offline ? 'offline' : null,
     data.uvLabel ? `UV ${data.uv}` : null,
     data.aqiLabel ? `AQI ${data.aqiLabel}` : null,
     `RH ${data.humidity}%`,

@@ -70,6 +70,26 @@ refresh paths that update the widgets update this too.
 Battery savers on some phones (Xiaomi, Oppo, Samsung's deep sleep) can delay or
 stop background refreshes — opening the app always brings both up to date.
 
+## Without a connection
+
+The app keeps the last full response for each location on disk, so opening it
+offline shows that reading immediately instead of an error:
+
+- the status line reads `Offline · 20 min ago` and its dot goes grey
+- a banner says which reading you are looking at, with a Retry button
+- everything computed from the reading still works — hourly chart, forecast
+  table, air quality, UV, sun and moon, advisories, unit and theme switching
+- the radar tile says it needs a connection instead of showing a dead map, and
+  city search explains that finding new cities needs the internet (saved and
+  recent places still switch fine)
+- widgets keep their last reading and mark it `OFF 12:40` rather than posing as
+  current; the status-bar notification adds `offline`
+- the ten-minute refresh pauses while offline, and the app refetches by itself
+  the moment the connection returns
+
+The only empty case is a first run that has never been online — there is
+genuinely nothing saved yet, so it says so and waits for a pull-to-refresh.
+
 ## Data
 
 [WeatherAPI.com](https://www.weatherapi.com) for weather, air quality and alerts;
