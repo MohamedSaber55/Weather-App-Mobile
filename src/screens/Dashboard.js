@@ -6,6 +6,8 @@ import * as Location from 'expo-location'
 import Header from '../components/Header'
 import SearchOverlay from '../components/SearchOverlay'
 import SettingsSheet from '../components/SettingsSheet'
+import PlacesSheet from '../components/PlacesSheet'
+import MapPicker from '../components/MapPicker'
 import ChartTile from '../components/tiles/ChartTile'
 import ForecastTile from '../components/tiles/ForecastTile'
 import RadarTile from '../components/tiles/RadarTile'
@@ -109,14 +111,17 @@ const makeStyles = t => ({
 export default function Dashboard() {
   const { styles, theme } = useStyles(makeStyles)
   const { settings } = useSettings()
-  const { favorites, toggleFavorite, pushRecent } = useFavorites()
+  const { favorites, defaultPlace, loaded: placesLoaded, toggleFavorite, addFavorite, setDefaultPlace, pushRecent } = useFavorites()
   const [query, setQuery] = useState(DEFAULT_CITY)
   const [searchOpen, setSearchOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [placesOpen, setPlacesOpen] = useState(false)
+  const [mapOpen, setMapOpen] = useState(false)
   const [locating, setLocating] = useState(false)
   const [notice, setNotice] = useState(null)
   const [width, setWidth] = useState(0)
   const appState = useRef(AppState.currentState)
+  const addingPlace = useRef(false)
 
   const { status, data, error, stale, cachedAt, offline, reload, refresh } = useWeather(query)
   const network = useNetworkState()
@@ -143,12 +148,19 @@ export default function Dashboard() {
   }, [data, settings])
 
   useEffect(() => {
+    if (!placesLoaded) return
+    if (defaultPlace) {
+      setQuery(placeQuery(defaultPlace))
+      return
+    }
     AsyncStorage.getItem(CITY_KEY)
       .then(saved => {
         if (saved) setQuery(saved)
       })
       .catch(() => {})
-  }, [])
+    // only decides the opening location, so it runs once the saved places are read
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [placesLoaded])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -189,6 +201,14 @@ export default function Dashboard() {
       })
     },
     [applyQuery, pushRecent]
+  )
+
+  const handleAddPlace = useCallback(
+    place => {
+      addFavorite(place)
+      handleSelectPlace(place)
+    },
+    [addFavorite, handleSelectPlace]
   )
 
   const handleUseCurrentLocation = async () => {
@@ -257,6 +277,8 @@ export default function Dashboard() {
           onSelectPlace={handleSelectPlace}
           onOpenSearch={() => setSearchOpen(true)}
           onOpenSettings={() => setSettingsOpen(true)}
+          onOpenPlaces={() => setPlacesOpen(true)}
+          defaultName={defaultPlace?.name}
         />
 
         <View style={styles.statusbar}>
@@ -385,7 +407,41 @@ export default function Dashboard() {
         ) : null}
       </ScrollView>
 
-      <SearchOverlay visible={searchOpen} onClose={() => setSearchOpen(false)} onSelect={handleSelectPlace} />
+      <SearchOverlay
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onSelect={place => {
+          if (addingPlace.current) {
+            addingPlace.current = false
+            handleAddPlace(place)
+          } else {
+            handleSelectPlace(place)
+          }
+        }}
+      />
+
+      <PlacesSheet
+        visible={placesOpen}
+        onClose={() => setPlacesOpen(false)}
+        onSelectPlace={handleSelectPlace}
+        currentName={location?.name}
+        onAddBySearch={() => {
+          addingPlace.current = true
+          setPlacesOpen(false)
+          setTimeout(() => setSearchOpen(true), 250)
+        }}
+        onAddByMap={() => {
+          setPlacesOpen(false)
+          setTimeout(() => setMapOpen(true), 250)
+        }}
+      />
+
+      <MapPicker
+        visible={mapOpen}
+        onClose={() => setMapOpen(false)}
+        onPick={handleAddPlace}
+        initial={location ? { lat: location.lat, lon: location.lon } : null}
+      />
       <SettingsSheet
         visible={settingsOpen}
         onClose={() => setSettingsOpen(false)}

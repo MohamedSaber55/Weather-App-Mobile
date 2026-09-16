@@ -25,6 +25,17 @@ const makeStyles = t => ({
   tab: { ...label(t, 12), color: t.dim, height: 44, lineHeight: 44, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabActive: { color: t.text, borderBottomColor: t.amber },
   save: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 44 },
+  add: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: t.border,
+    borderRadius: 4,
+    alignSelf: 'center',
+  },
+  tabInner: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 44 },
   saveText: { ...label(t, 12), color: t.dim },
   saveTextOn: { color: t.amber },
   coords: { ...mono(t, 10), color: t.dim, paddingHorizontal: 14, paddingBottom: 8 },
@@ -38,6 +49,8 @@ export default function Header({
   onSelectPlace,
   onOpenSearch,
   onOpenSettings,
+  onOpenPlaces,
+  defaultName,
 }) {
   const { styles, theme } = useStyles(makeStyles)
   const name = location?.name || 'Locating'
@@ -72,7 +85,10 @@ export default function Header({
                 accessibilityRole="tab"
                 accessibilityState={{ selected: active }}
               >
-                <Text style={[styles.tab, active && styles.tabActive]}>{place.name}</Text>
+                <View style={styles.tabInner}>
+                  {sameName(place.name, defaultName) ? <Icon name="home" size={11} color={active ? theme.amber : theme.dim} /> : null}
+                  <Text style={[styles.tab, active && styles.tabActive]}>{place.name}</Text>
+                </View>
               </Pressable>
             )
           })}
@@ -86,6 +102,15 @@ export default function Header({
           >
             <Icon name="star" size={12} color={isFavorite ? theme.amber : theme.dim} fill={isFavorite ? theme.amber : 'none'} />
             <Text style={[styles.saveText, isFavorite && styles.saveTextOn]}>{isFavorite ? 'Saved' : 'Save'}</Text>
+          </Pressable>
+          <Pressable
+            onPress={onOpenPlaces}
+            accessibilityRole="button"
+            accessibilityLabel="Saved places"
+            style={styles.add}
+            hitSlop={6}
+          >
+            <Icon name="plus" size={14} color={theme.text} />
           </Pressable>
         </ScrollView>
       </View>
