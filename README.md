@@ -171,8 +171,24 @@ phone but roughly triples the size (~29 MB vs ~80 MB).
    externalNativeBuild { cmake { buildStagingDirectory = file("C:/x") } }
    ```
 
-   and build from `C:\w\android`. (Regenerate those after any `expo prebuild`,
-   which overwrites `android/`.)
+   The native modules under `node_modules` sit deeper still — there `ninja`
+   loops on `manifest 'build.ninja' still dirty after 100 tries` instead — so
+   give every subproject the same treatment in `android/build.gradle`:
+
+   ```gradle
+   subprojects { subproject ->
+     afterEvaluate {
+       if (subproject.plugins.hasPlugin('com.android.library')) {
+         subproject.android {
+           externalNativeBuild { cmake { buildStagingDirectory = file("C:/x/" + subproject.name) } }
+         }
+       }
+     }
+   }
+   ```
+
+   and build from `C:\w\android`. `plugins/withAndroidBuildFixes.js` writes
+   both of these back after every `expo prebuild`, which overwrites `android/`.
 
 2. **Don't map the project to a drive root** (`subst W: <project>`). Expo's
    autolinking walks *up* for `package.json` and never checks the root itself,
