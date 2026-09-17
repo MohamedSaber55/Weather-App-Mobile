@@ -3,20 +3,21 @@ import { Text, View } from 'react-native'
 import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg'
 import { Bars, Gauge, GaugeRow, KeyValue, Note, Scale, Segments, Stat, Tile } from '../Tile'
 import { ConditionIcon } from '../Icons'
-import { AQI_COLORS, FONTS, label, mono, useStyles, useTheme } from '../../theme'
+import { AQI_COLORS, FONTS, label, mono, RTL, useStyles, useTheme } from '../../theme'
+import { useI18n } from '../../context/SettingsContext'
 import {
   activityAdvice,
   aqiLevel,
   clothingAdvice,
   comfortLabel,
-  conditionTitleByCategory,
+  conditionTitleKey,
   getCategory,
   moonIsWaning,
   rainAdvice,
   UV_RANGES,
-  uvBurnTime,
+  uvBurnTimeKey,
   uvLevel,
-  uvProtection,
+  uvProtectionKey,
 } from '../../lib/conditions'
 import {
   clamp,
@@ -39,9 +40,9 @@ const makeStyles = t => ({
   sub: { flexDirection: 'row', gap: 18 },
   subText: { ...mono(t, 12), color: t.muted },
   subStrong: { ...mono(t, 12, 'medium'), color: t.text },
-  condition: { fontFamily: FONTS.condMedium, fontSize: 18, letterSpacing: 0.6, textTransform: 'uppercase', color: t.text },
-  conditionTitle: { fontFamily: FONTS.condMedium, fontSize: 26, letterSpacing: 0.5, textTransform: 'uppercase', color: t.text },
-  conditionSub: { ...mono(t, 12), color: t.muted, textTransform: 'uppercase', marginTop: 4 },
+  condition: { fontFamily: FONTS.condMedium, fontSize: 18, letterSpacing: RTL ? 0 : 0.6, textTransform: RTL ? 'none' : 'uppercase', color: t.text },
+  conditionTitle: { fontFamily: FONTS.condMedium, fontSize: 26, letterSpacing: RTL ? 0 : 0.5, textTransform: RTL ? 'none' : 'uppercase', color: t.text },
+  conditionSub: { ...mono(t, 12), color: t.muted, textTransform: RTL ? 'none' : 'uppercase', marginTop: 4 },
   stats: { flexDirection: 'row', gap: 8, borderTopWidth: 1, borderTopColor: t.border, paddingTop: 10 },
   rail: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 2 },
   railEnd: { ...mono(t, 11), color: t.muted },
@@ -60,19 +61,20 @@ const makeStyles = t => ({
   uvBarFill: { width: '100%', maxWidth: 14, backgroundColor: t.amber, borderTopLeftRadius: 2, borderTopRightRadius: 2 },
   uvBarLabel: { ...mono(t, 8), color: t.dim },
   advRow: { flexDirection: 'row', gap: 12, paddingVertical: 9 },
-  advTag: { ...mono(t, 10, 'bold'), color: t.amber, letterSpacing: 0.8, textTransform: 'uppercase', width: 62 },
+  advTag: { ...mono(t, 10, 'bold'), color: t.amber, letterSpacing: RTL ? 0 : 0.8, textTransform: RTL ? 'none' : 'uppercase', width: 62 },
   advText: { fontFamily: FONTS.cond, fontSize: 15, lineHeight: 20, color: t.text, flex: 1 },
   divider: { borderTopWidth: 1, borderTopColor: t.border },
   moonRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   moonPhase: { ...label(t, 13), color: t.text },
-  moonRise: { ...mono(t, 11), color: t.muted, textTransform: 'uppercase' },
+  moonRise: { ...mono(t, 11), color: t.muted, textTransform: RTL ? 'none' : 'uppercase' },
   sunRow: { gap: 10 },
 })
 
 /* ---------- temperature ---------- */
 
 export function TemperatureTile({ current, day, settings }) {
-  const { styles, theme } = useStyles(makeStyles)
+  const { styles } = useStyles(makeStyles)
+  const { t } = useI18n()
   const unit = settings.tempUnit
   const temp = tempValue(current.temp_c, unit)
   const low = tempValue(day?.mintemp_c ?? current.temp_c, unit)
@@ -80,7 +82,7 @@ export function TemperatureTile({ current, day, settings }) {
   const position = high > low ? clamp((temp - low) / (high - low), 0, 1) * 100 : 50
 
   return (
-    <Tile label="Temperature" meta={`°${unit}`}>
+    <Tile label={t('tile.temperature')} meta={`°${unit}`}>
       <View style={styles.row}>
         <View style={styles.tempReadout}>
           <Text style={styles.tempValue}>{fixed1(temp)}</Text>
@@ -90,17 +92,17 @@ export function TemperatureTile({ current, day, settings }) {
       </View>
       <View style={styles.sub}>
         <Text style={styles.subText}>
-          Feels <Text style={styles.subStrong}>{fixed1(tempValue(current.feelslike_c, unit))}°</Text>
+          {t('label.feels')} <Text style={styles.subStrong}>{fixed1(tempValue(current.feelslike_c, unit))}°</Text>
         </Text>
         <Text style={styles.subText}>
-          Dew{' '}
+          {t('label.dew')}{' '}
           <Text style={styles.subStrong}>
             {current.dewpoint_c != null ? `${fixed1(tempValue(current.dewpoint_c, unit))}°` : '--'}
           </Text>
         </Text>
       </View>
       <Text style={styles.condition} numberOfLines={2}>
-        {current.condition.text} · {conditionTitleByCategory(getCategory(current.condition.code, current.condition.text))}
+        {current.condition.text} · {t(conditionTitleKey(getCategory(current.condition.code, current.condition.text)))}
       </Text>
       <View style={styles.rail}>
         <Text style={styles.railEnd}>{fixed1(low)}</Text>
@@ -118,12 +120,13 @@ export function TemperatureTile({ current, day, settings }) {
 
 export function ConditionTile({ current, hour, settings }) {
   const { styles } = useStyles(makeStyles)
+  const { t } = useI18n()
   const isDay = current.is_day === 1
   const text = current.condition.text
   const vis = formatVisibility(current.vis_km ?? 0, settings.distanceUnit)
 
   return (
-    <Tile label="Condition" meta={`Code ${current.condition.code}`}>
+    <Tile label={t('tile.condition')} meta={t('meta.code', { code: current.condition.code })}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
         <ConditionIcon code={current.condition.code} text={text} isDay={isDay} size={54} strokeWidth={1.4} />
         <View style={{ flex: 1, minWidth: 0 }}>
@@ -131,14 +134,14 @@ export function ConditionTile({ current, hour, settings }) {
             {text}
           </Text>
           <Text style={styles.conditionSub}>
-            {isDay ? 'Day' : 'Night'} · {conditionTitleByCategory(getCategory(current.condition.code, text))}
+            {isDay ? t('label.dayTime') : t('label.nightTime')} · {t(conditionTitleKey(getCategory(current.condition.code, text)))}
           </Text>
         </View>
       </View>
       <View style={styles.stats}>
-        <Stat label="Cloud" value={`${current.cloud ?? 0}%`} />
-        <Stat label="Rain" value={`${hour?.chance_of_rain ?? 0}%`} />
-        <Stat label="Vis" value={`${vis.value} ${vis.label}`} />
+        <Stat label={t('label.cloud')} value={`${current.cloud ?? 0}%`} />
+        <Stat label={t('label.rain')} value={`${hour?.chance_of_rain ?? 0}%`} />
+        <Stat label={t('label.vis')} value={`${vis.value} ${vis.label}`} />
       </View>
     </Tile>
   )
@@ -203,11 +206,12 @@ function Compass({ degree = 0, size = 88 }) {
 
 export function WindTile({ current, settings, style }) {
   const { styles } = useStyles(makeStyles)
+  const { t } = useI18n()
   const unit = settings.speedUnit
   const degree = current.wind_degree ?? 0
 
   return (
-    <Tile label="Wind" meta={`${current.wind_dir || '--'} ${degree}°`} style={style}>
+    <Tile label={t('tile.wind')} meta={`${current.wind_dir || '--'} ${degree}°`} style={style}>
       <View style={{ alignItems: 'center' }}>
         <Compass degree={degree} />
       </View>
@@ -226,11 +230,12 @@ export function WindTile({ current, settings, style }) {
 
 export function HumidityTile({ current, settings, style }) {
   const { styles } = useStyles(makeStyles)
+  const { t } = useI18n()
   const humidity = current.humidity ?? 0
   const vis = formatVisibility(current.vis_km ?? 0, settings.distanceUnit)
 
   return (
-    <Tile label="Humidity" meta="RH" style={style}>
+    <Tile label={t('tile.humidity')} meta={t('meta.rh')} style={style}>
       <View style={styles.bigValue}>
         <Text style={styles.numXl}>{humidity}</Text>
         <Text style={styles.unit}>%</Text>
@@ -238,10 +243,10 @@ export function HumidityTile({ current, settings, style }) {
       <Segments count={10} filled={Math.round(humidity / 10)} />
       <View style={{ gap: 8, marginTop: 2 }}>
         <KeyValue
-          label="Dew"
+          label={t('label.dew')}
           value={current.dewpoint_c != null ? `${fixed1(tempValue(current.dewpoint_c, settings.tempUnit))}°` : '--'}
         />
-        <KeyValue label="Vis" value={`${vis.value} ${vis.label}`} />
+        <KeyValue label={t('label.vis')} value={`${vis.value} ${vis.label}`} />
       </View>
     </Tile>
   )
@@ -249,20 +254,21 @@ export function HumidityTile({ current, settings, style }) {
 
 export function PressureTile({ current, settings, style }) {
   const { styles } = useStyles(makeStyles)
+  const { t } = useI18n()
   const mb = current.pressure_mb ?? 0
   const hPa = { value: String(Math.round(mb)), label: 'hPa' }
   const inHg = { value: (mb * 0.0295299830714).toFixed(2), label: 'inHg' }
   const [main, alternate] = settings.pressureUnit === 'inHg' ? [inHg, hPa] : [hPa, inHg]
 
   return (
-    <Tile label="Pressure" meta="MSL" style={style}>
+    <Tile label={t('tile.pressure')} meta={t('meta.msl')} style={style}>
       <View style={styles.bigValue}>
         <Text style={styles.numXl}>{main.value}</Text>
         <Text style={styles.unit}>{main.label}</Text>
       </View>
       <View style={{ gap: 8, marginTop: 'auto' }}>
         <KeyValue label={alternate.label} value={alternate.value} />
-        <KeyValue label="Cloud" value={`${current.cloud ?? 0}%`} />
+        <KeyValue label={t('label.cloud')} value={`${current.cloud ?? 0}%`} />
       </View>
     </Tile>
   )
@@ -279,11 +285,12 @@ const POLLUTANTS = [
 
 export function AirQualityTile({ airQuality, style }) {
   const { styles } = useStyles(makeStyles)
+  const { t } = useI18n()
   const raw = airQuality?.['us-epa-index']
   if (raw === undefined || raw === null) {
     return (
-      <Tile label="Air quality" meta="US EPA" style={style}>
-        <Note>No air quality data here.</Note>
+      <Tile label={t('tile.airQuality')} meta={t('meta.usEpa')} style={style}>
+        <Note>{t('meta.noData')}</Note>
       </Tile>
     )
   }
@@ -297,19 +304,19 @@ export function AirQualityTile({ airQuality, style }) {
   }))
 
   return (
-    <Tile label="Air quality" meta="US EPA" style={style}>
+    <Tile label={t('tile.airQuality')} meta={t('meta.usEpa')} style={style}>
       <View style={{ alignItems: 'center' }}>
-        <Gauge ranges={ranges} total={6} value={level.index - 0.5} accessibilityLabel={`Air quality ${level.label}`} />
+        <Gauge ranges={ranges} total={6} value={level.index - 0.5} accessibilityLabel={`${t('tile.airQuality')} ${t(level.key)}`} />
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
         <View style={styles.bigValue}>
           <Text style={styles.numLg}>{level.index}</Text>
           <Text style={styles.numSub}>/6</Text>
         </View>
-        <Text style={[styles.moonPhase, { flexShrink: 1, textAlign: 'right' }]}>{level.label}</Text>
+        <Text style={[styles.moonPhase, { flexShrink: 1, textAlign: RTL ? 'left' : 'right' }]}>{t(level.key)}</Text>
       </View>
       <Bars rows={rows} />
-      <Note>{level.advice}</Note>
+      <Note>{t(level.adviceKey)}</Note>
     </Tile>
   )
 }
@@ -318,6 +325,7 @@ export function AirQualityTile({ airQuality, style }) {
 
 export function UvTile({ uv, hours = [], nowHour, settings, style }) {
   const { styles, theme } = useStyles(makeStyles)
+  const { t } = useI18n()
   const value = typeof uv === 'number' ? uv : 0
   const level = uvLevel(value)
   const ranges = UV_RANGES.map(r => ({ ...r, active: value >= r.from && value < r.to }))
@@ -328,13 +336,13 @@ export function UvTile({ uv, hours = [], nowHour, settings, style }) {
   const peak = hours.reduce((best, h) => ((h.uv ?? 0) > (best?.uv ?? -1) ? h : best), null)
 
   return (
-    <Tile label="UV index" meta={peak?.uv ? `Peak ${formatTime(peak.time, settings.hourFormat)}` : 'Today'} style={style}>
+    <Tile label={t('tile.uv')} meta={peak?.uv ? t('meta.peak', { time: formatTime(peak.time, settings.hourFormat) }) : t('meta.today')} style={style}>
       <View style={{ alignItems: 'center' }}>
-        <Gauge ranges={ranges} total={12} value={Math.min(value, 12)} accessibilityLabel={`UV index ${Math.round(value)}`} />
+        <Gauge ranges={ranges} total={12} value={Math.min(value, 12)} accessibilityLabel={`${t('tile.uv')} ${Math.round(value)}`} />
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
         <Text style={styles.numLg}>{Math.round(value)}</Text>
-        <Text style={styles.moonPhase}>{level.label}</Text>
+        <Text style={styles.moonPhase}>{t(level.key)}</Text>
       </View>
       {daylight.length > 0 && (
         <View style={styles.uvBars}>
@@ -356,8 +364,8 @@ export function UvTile({ uv, hours = [], nowHour, settings, style }) {
         </View>
       )}
       <View style={{ gap: 8 }}>
-        <KeyValue label="Burn time" value={uvBurnTime(value)} />
-        <KeyValue label="Protect" value={uvProtection(value)} />
+        <KeyValue label={t('label.burnTime')} value={t(uvBurnTimeKey(value))} />
+        <KeyValue label={t('label.protect')} value={t(uvProtectionKey(value))} />
       </View>
     </Tile>
   )
@@ -401,6 +409,7 @@ function SunArc({ progress, width }) {
 
 export function SunTile({ astro, localtime, settings, width }) {
   const { styles } = useStyles(makeStyles)
+  const { t } = useI18n()
   const rise = clockHours(astro?.sunrise)
   const set = clockHours(astro?.sunset)
   const now = clockHours(localtime)
@@ -410,13 +419,13 @@ export function SunTile({ astro, localtime, settings, width }) {
   const isNight = !hasWindow || raw <= 0 || raw >= 1
 
   return (
-    <Tile label="Sun" meta={`Daylight ${dayLength(astro?.sunrise, astro?.sunset) || '--'}`}>
+    <Tile label={t('tile.sun')} meta={t('meta.daylight', { length: dayLength(astro?.sunrise, astro?.sunset) || '--' })}>
       <View style={styles.sunRow}>
         <SunArc progress={isNight ? 0 : progress} width={width} />
         <View style={{ gap: 8 }}>
-          <KeyValue label="Rise" value={formatTime(astro?.sunrise, settings.hourFormat)} />
-          <KeyValue label="Set" value={formatTime(astro?.sunset, settings.hourFormat)} />
-          <KeyValue label="Elapsed" value={isNight ? 'Night' : `${Math.round(progress * 100)}%`} accent />
+          <KeyValue label={t('label.rise')} value={formatTime(astro?.sunrise, settings.hourFormat)} />
+          <KeyValue label={t('label.set')} value={formatTime(astro?.sunset, settings.hourFormat)} />
+          <KeyValue label={t('label.elapsed')} value={isNight ? t('label.night') : `${Math.round(progress * 100)}%`} accent />
         </View>
       </View>
     </Tile>
@@ -447,18 +456,19 @@ function MoonDisc({ illumination = 0, waning = false, size = 56 }) {
 
 export function MoonTile({ astro, settings, style }) {
   const { styles } = useStyles(makeStyles)
+  const { t } = useI18n()
   const illumination = Number(astro?.moon_illumination)
   const phase = astro?.moon_phase || 'Moon'
   const rise = astro?.moonrise
 
   return (
-    <Tile label="Moon" meta={Number.isFinite(illumination) ? `Illum ${Math.round(illumination)}%` : ''} style={style}>
+    <Tile label={t('tile.moon')} meta={Number.isFinite(illumination) ? t('meta.illum', { percent: Math.round(illumination) }) : ''} style={style}>
       <View style={styles.moonRow}>
         <MoonDisc illumination={Number.isFinite(illumination) ? illumination : 0} waning={moonIsWaning(phase)} />
         <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-          <Text style={styles.moonPhase}>{phase}</Text>
+          <Text style={styles.moonPhase}>{t(`moon.${phase}`)}</Text>
           <Text style={styles.moonRise}>
-            Rise {rise && /\d/.test(rise) ? formatTime(rise, settings.hourFormat) : '--'}
+            {t('label.rise')} {rise && /\d/.test(rise) ? formatTime(rise, settings.hourFormat) : '--'}
           </Text>
         </View>
       </View>
@@ -470,6 +480,7 @@ export function MoonTile({ astro, settings, style }) {
 
 export function AdvisoriesTile({ current, day }) {
   const { styles } = useStyles(makeStyles)
+  const { t } = useI18n()
   const chanceOfRain = day?.daily_chance_of_rain ?? 0
   const activity = activityAdvice({
     category: getCategory(current.condition.code, current.condition.text),
@@ -479,22 +490,22 @@ export function AdvisoriesTile({ current, day }) {
   })
   const rain = rainAdvice(chanceOfRain)
   const rows = [
-    { tag: 'Wear', text: clothingAdvice(current.feelslike_c).text },
-    { tag: activity.tag, text: activity.text },
-    rain && { tag: 'Rain', text: rain.text },
+    { tag: 'wear', key: clothingAdvice(current.feelslike_c).key },
+    { tag: activity.tag, key: activity.key },
+    rain && { tag: 'rain', key: rain.key },
     {
-      tag: 'Comfort',
-      text: comfortLabel({ feelslikeC: current.feelslike_c, tempC: current.temp_c, humidity: current.humidity }).text,
+      tag: 'comfort',
+      key: comfortLabel({ feelslikeC: current.feelslike_c, tempC: current.temp_c, humidity: current.humidity }).key,
     },
   ].filter(Boolean)
 
   return (
-    <Tile label="Advisories" meta="Rule-based">
+    <Tile label={t('tile.advisories')} meta={t('meta.ruleBased')}>
       <View>
         {rows.map((row, i) => (
           <View key={`${row.tag}-${i}`} style={[styles.advRow, i > 0 && styles.divider]}>
-            <Text style={styles.advTag}>{row.tag}</Text>
-            <Text style={styles.advText}>{row.text}</Text>
+            <Text style={styles.advTag}>{t(`advTag.${row.tag}`)}</Text>
+            <Text style={styles.advText}>{t(row.key)}</Text>
           </View>
         ))}
       </View>

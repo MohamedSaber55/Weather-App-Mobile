@@ -2,8 +2,9 @@ import React from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { Icon, Logo } from './Icons'
 import { IconButton } from './Tile'
-import { label, mono, RADIUS, useStyles } from '../theme'
+import { label, mono, RADIUS, RTL, useStyles } from '../theme'
 import { countryCode } from '../lib/countries'
+import { useI18n } from '../context/SettingsContext'
 import { coordsLabel, utcOffsetLabel } from '../lib/units'
 
 const sameName = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase()
@@ -18,7 +19,7 @@ const makeStyles = t => ({
   top: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 14, paddingRight: 6, height: 54 },
   brand: { ...mono(t, 14, 'bold'), letterSpacing: 0.8 },
   divider: { width: 1, height: 20, backgroundColor: t.border },
-  place: { ...mono(t, 13, 'medium'), textTransform: 'uppercase', flex: 1, minWidth: 0 },
+  place: { ...mono(t, 13, 'medium'), textTransform: RTL ? 'none' : 'uppercase', flex: 1, minWidth: 0 },
   tools: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   tabsRow: { borderTopWidth: 1, borderTopColor: t.border },
   tabs: { flexDirection: 'row', alignItems: 'center', gap: 18, paddingHorizontal: 14, height: 44 },
@@ -53,7 +54,8 @@ export default function Header({
   defaultName,
 }) {
   const { styles, theme } = useStyles(makeStyles)
-  const name = location?.name || 'Locating'
+  const { t } = useI18n()
+  const name = location?.name || t('header.locating')
   const code = location ? countryCode(location.country) : ''
   const offset = location ? utcOffsetLabel(location.localtime, location.localtime_epoch) : null
   const coords = location ? coordsLabel(location.lat, location.lon) : ''
@@ -69,8 +71,8 @@ export default function Header({
           {code ? `${name}, ${code}` : name}
         </Text>
         <View style={styles.tools}>
-          <IconButton name="search" onPress={onOpenSearch} accessibilityLabel="Search for a city" />
-          <IconButton name="sliders" onPress={onOpenSettings} accessibilityLabel="Open settings" />
+          <IconButton name="search" onPress={onOpenSearch} accessibilityLabel={t('search.aria')} />
+          <IconButton name="sliders" onPress={onOpenSettings} accessibilityLabel={t('header.settings')} />
         </View>
       </View>
 
@@ -97,16 +99,16 @@ export default function Header({
             disabled={!location}
             accessibilityRole="button"
             accessibilityState={{ selected: isFavorite }}
-            accessibilityLabel={isFavorite ? 'Remove from saved locations' : 'Save this location'}
+            accessibilityLabel={isFavorite ? t('header.unsave') : t('header.saveAria')}
             style={styles.save}
           >
             <Icon name="star" size={12} color={isFavorite ? theme.amber : theme.dim} fill={isFavorite ? theme.amber : 'none'} />
-            <Text style={[styles.saveText, isFavorite && styles.saveTextOn]}>{isFavorite ? 'Saved' : 'Save'}</Text>
+            <Text style={[styles.saveText, isFavorite && styles.saveTextOn]}>{isFavorite ? t('header.saved') : t('header.save')}</Text>
           </Pressable>
           <Pressable
             onPress={onOpenPlaces}
             accessibilityRole="button"
-            accessibilityLabel="Saved places"
+            accessibilityLabel={t('places.open')}
             style={styles.add}
             hitSlop={6}
           >

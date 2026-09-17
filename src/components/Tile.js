@@ -1,7 +1,7 @@
 import React from 'react'
 import { Pressable, Text, View } from 'react-native'
 import Svg, { Circle, Path } from 'react-native-svg'
-import { FONTS, RADIUS, label, mono, useStyles, useTheme } from '../theme'
+import { FONTS, label, mono, RADIUS, RTL, useStyles, useTheme } from '../theme'
 import { Icon } from './Icons'
 
 const makeStyles = t => ({
@@ -19,7 +19,7 @@ const makeStyles = t => ({
   },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   label: label(t, 11),
-  meta: { ...mono(t, 10), color: t.dim, textTransform: 'uppercase', flexShrink: 1, textAlign: 'right' },
+  meta: { ...mono(t, 10), color: t.dim, textTransform: RTL ? 'none' : 'uppercase', flexShrink: 1, textAlign: RTL ? 'left' : 'right' },
   kv: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 },
   kvKey: label(t, 10, t.dim),
   kvKeyColor: { color: t.dim },
@@ -32,7 +32,7 @@ const makeStyles = t => ({
   barKey: { ...mono(t, 10), color: t.muted, width: 44 },
   barTrack: { flex: 1, height: 4, borderRadius: 2, backgroundColor: t.border, overflow: 'hidden' },
   barFill: { height: 4, backgroundColor: t.muted, borderRadius: 2 },
-  barValue: { ...mono(t, 10), width: 30, textAlign: 'right' },
+  barValue: { ...mono(t, 10), width: 30, textAlign: RTL ? 'left' : 'right' },
   segments: { flexDirection: 'row', gap: 2 },
   segment: { flex: 1, height: 16 },
   scale: { flexDirection: 'row', justifyContent: 'space-between' },

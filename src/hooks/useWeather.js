@@ -15,7 +15,7 @@ async function isOffline() {
   }
 }
 
-export function useWeather(query) {
+export function useWeather(query, language = 'en') {
   const [state, setState] = useState({
     status: 'loading',
     data: null,
@@ -28,7 +28,7 @@ export function useWeather(query) {
   const cacheRef = useRef(new Map())
   const silentRef = useRef(false)
 
-  const key = String(query || '').trim().toLowerCase()
+  const key = `${String(query || '').trim().toLowerCase()}|${language}`
 
   useEffect(() => {
     if (!key) return undefined
@@ -83,7 +83,7 @@ export function useWeather(query) {
       }
 
       try {
-        const data = await getWeather(key, { days: 7, aqi: true, alerts: true, signal: controller.signal })
+        const data = await getWeather(query, { days: 7, aqi: true, alerts: true, lang: language, signal: controller.signal })
         if (controller.signal.aborted || cancelled) return
         cacheRef.current.set(key, { data, ts: Date.now() })
         saveCachedWeather(key, data)
@@ -110,7 +110,7 @@ export function useWeather(query) {
       cancelled = true
       controller.abort()
     }
-  }, [key, reloadKey])
+  }, [key, query, language, reloadKey])
 
   const reload = useCallback(() => {
     cacheRef.current.delete(key)

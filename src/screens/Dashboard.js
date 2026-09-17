@@ -25,10 +25,10 @@ import {
 } from '../components/tiles/Readings'
 import { Icon } from '../components/Icons'
 import { Note, Tile } from '../components/Tile'
-import { GAP, label, mono, RADIUS, useStyles } from '../theme'
+import { GAP, label, mono, RADIUS, RTL, useStyles } from '../theme'
 import { useNetworkState } from 'expo-network'
 import { useWeather } from '../hooks/useWeather'
-import { useSettings } from '../context/SettingsContext'
+import { useI18n, useSettings } from '../context/SettingsContext'
 import { useFavorites } from '../context/FavoritesContext'
 import { getSearchResults } from '../lib/api'
 import { cacheSummary } from '../widget/data'
@@ -39,18 +39,6 @@ import { addMinutes, clockHours, dateStamp, formatTime, speedLabel } from '../li
 const DEFAULT_CITY = 'beni suef'
 const CITY_KEY = 'city'
 const REFRESH_MS = 10 * 60 * 1000
-
-// "4 min ago" / "2 h ago" — how old the reading on screen is
-function ago(timestamp) {
-  if (!timestamp) return 'a while ago'
-  const minutes = Math.max(0, Math.round((Date.now() - timestamp) / 60000))
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes} min ago`
-  const hours = Math.round(minutes / 60)
-  if (hours < 24) return `${hours} h ago`
-  const days = Math.round(hours / 24)
-  return days === 1 ? 'yesterday' : `${days} days ago`
-}
 
 // WeatherAPI accepts an id, "lat,lon" or a plain name — prefer the most precise one
 function placeQuery(place) {
@@ -64,10 +52,10 @@ const makeStyles = t => ({
   screen: { flex: 1, backgroundColor: t.bg },
   content: { padding: 12, gap: GAP, paddingBottom: 28 },
   statusbar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10, paddingHorizontal: 4, paddingVertical: 8 },
-  statusText: { ...mono(t, 10), color: t.dim, textTransform: 'uppercase', flexShrink: 1 },
+  statusText: { ...mono(t, 10), color: t.dim, textTransform: RTL ? 'none' : 'uppercase', flexShrink: 1 },
   live: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: t.cyan },
-  liveText: { ...mono(t, 10), color: t.muted, textTransform: 'uppercase' },
+  liveText: { ...mono(t, 10), color: t.muted, textTransform: RTL ? 'none' : 'uppercase' },
   row: { flexDirection: 'row', gap: GAP, alignItems: 'stretch' },
   half: { flex: 1, minWidth: 0 },
   notice: {
@@ -105,12 +93,25 @@ const makeStyles = t => ({
   },
   retryText: { ...label(t, 12), color: t.text },
   footer: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, paddingHorizontal: 4, paddingTop: 6 },
-  footerText: { ...mono(t, 9), color: t.dim, textTransform: 'uppercase', flexShrink: 1 },
+  footerText: { ...mono(t, 9), color: t.dim, textTransform: RTL ? 'none' : 'uppercase', flexShrink: 1 },
 })
 
 export default function Dashboard() {
   const { styles, theme } = useStyles(makeStyles)
   const { settings } = useSettings()
+  const { t, days: dayNames, months } = useI18n()
+
+  // "4 min ago" / "2 h ago" — how old the reading on screen is
+  const ago = timestamp => {
+    if (!timestamp) return t('time.unknown')
+    const minutes = Math.max(0, Math.round((Date.now() - timestamp) / 60000))
+    if (minutes < 1) return t('time.justNow')
+    if (minutes < 60) return t('time.minutes', { count: minutes })
+    const hours = Math.round(minutes / 60)
+    if (hours < 24) return t('time.hours', { count: hours })
+    const dayCount = Math.round(hours / 24)
+    return dayCount === 1 ? t('time.yesterday') : t('time.days', { count: dayCount })
+  }
   const { favorites, defaultPlace, loaded: placesLoaded, toggleFavorite, addFavorite, setDefaultPlace, pushRecent } = useFavorites()
   const [query, setQuery] = useState(DEFAULT_CITY)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -123,7 +124,7 @@ export default function Dashboard() {
   const appState = useRef(AppState.currentState)
   const addingPlace = useRef(false)
 
-  const { status, data, error, stale, cachedAt, offline, reload, refresh } = useWeather(query)
+  const { status, data, error, stale, cachedAt, offline, reload, refresh } = useWeather(query, settings.language)
   const network = useNetworkState()
   const noConnection =
     offline || network?.isConnected === false || network?.isInternetReachable === false
@@ -217,7 +218,7 @@ export default function Dashboard() {
     try {
       const { status: permission } = await Location.requestForegroundPermissionsAsync()
       if (permission !== 'granted') {
-        setNotice('Location permission denied. Search for a city instead.')
+        setNotice(t('notice.locationDenied'))
         return
       }
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
@@ -230,7 +231,7 @@ export default function Dashboard() {
       }
       setSettingsOpen(false)
     } catch {
-      setNotice('Could not read your location. Search for a city instead.')
+      setNotice(t('notice.locationFailed'))
     } finally {
       setLocating(false)
     }
@@ -284,8 +285,8 @@ export default function Dashboard() {
         <View style={styles.statusbar}>
           <Text style={styles.statusText} numberOfLines={1}>
             {location
-              ? `${dateStamp(location.localtime)} · ${formatTime(location.localtime, settings.hourFormat)} local`
-              : 'Connecting…'}
+              ? `${dateStamp(location.localtime, { days: dayNames, months })} · ${formatTime(location.localtime, settings.hourFormat)} ${t('status.local')}`
+              : t('status.connecting')}
           </Text>
           <View style={styles.live}>
             <View
@@ -297,10 +298,10 @@ export default function Dashboard() {
             />
             <Text style={styles.liveText}>
               {noConnection
-                ? `Offline · ${ago(cachedAt)}`
+                ? t('status.offline', { age: ago(cachedAt) })
                 : updated
-                  ? `Upd ${formatTime(updated, settings.hourFormat)} · Next ${addMinutes(updated, 15, settings.hourFormat)}`
-                  : 'Fetching…'}
+                  ? `${t('status.updated', { time: formatTime(updated, settings.hourFormat) })} · ${t('status.next', { time: addMinutes(updated, 15, settings.hourFormat) })}`
+                  : t('status.fetching')}
             </Text>
           </View>
         </View>
@@ -310,7 +311,7 @@ export default function Dashboard() {
             <Icon name="alert" size={14} color={theme.muted} />
             <Text style={styles.noticeText}>{notice}</Text>
             <Pressable onPress={() => setNotice(null)} accessibilityRole="button">
-              <Text style={[styles.retryText, { color: theme.muted }]}>Dismiss</Text>
+              <Text style={[styles.retryText, { color: theme.muted }]}>{t('error.dismiss')}</Text>
             </Pressable>
           </View>
         ) : null}
@@ -318,9 +319,9 @@ export default function Dashboard() {
         {noConnection && data ? (
           <View style={styles.notice}>
             <Icon name="alert" size={14} color={theme.muted} />
-            <Text style={styles.noticeText}>{`No connection — showing the reading from ${ago(cachedAt)}`}</Text>
+            <Text style={styles.noticeText}>{t('offline.banner', { age: ago(cachedAt) })}</Text>
             <Pressable onPress={reload} accessibilityRole="button">
-              <Text style={[styles.retryText, { color: theme.amber }]}>Retry</Text>
+              <Text style={[styles.retryText, { color: theme.amber }]}>{t('error.retry')}</Text>
             </Pressable>
           </View>
         ) : null}
@@ -330,7 +331,7 @@ export default function Dashboard() {
             <Icon name="alert" size={14} color={theme.amber} />
             <Text style={styles.noticeText}>{error.message}</Text>
             <Pressable onPress={reload} accessibilityRole="button">
-              <Text style={[styles.retryText, { color: theme.amber }]}>Retry</Text>
+              <Text style={[styles.retryText, { color: theme.amber }]}>{t('error.retry')}</Text>
             </Pressable>
           </View>
         ) : null}
@@ -338,20 +339,16 @@ export default function Dashboard() {
         {status === 'loading' && !data ? (
           <View style={styles.center}>
             <ActivityIndicator color={theme.amber} />
-            <Text style={styles.statusText}>Loading weather…</Text>
+            <Text style={styles.statusText}>{t('app.loading')}</Text>
           </View>
         ) : null}
 
         {status === 'error' && !data ? (
-          <Tile label={noConnection ? 'No connection' : 'Connection error'} meta="No data">
-            <Note>
-              {noConnection
-                ? 'This is the first run without a connection, so there is nothing saved to show yet. Connect and pull down to refresh.'
-                : error?.message || 'The weather service did not respond.'}
-            </Note>
+          <Tile label={noConnection ? t('offline.title') : t('error.title')} meta={t('meta.noData')}>
+            <Note>{noConnection ? t('offline.firstRunMobile') : error?.message || t('error.body')}</Note>
             <Pressable style={styles.retry} onPress={reload} accessibilityRole="button">
               <Icon name="rotate" size={13} color={theme.text} />
-              <Text style={styles.retryText}>Retry</Text>
+              <Text style={styles.retryText}>{t('error.retry')}</Text>
             </Pressable>
           </Tile>
         ) : null}
@@ -360,10 +357,10 @@ export default function Dashboard() {
           <>
             {alert ? (
               <View style={[styles.alert, { borderColor: theme.amber }]}>
-                <Text style={[styles.alertTag, { backgroundColor: theme.amber }]}>Alert</Text>
-                <Text style={styles.alertTitle}>{alert.event || alert.headline || 'Weather alert'}</Text>
+                <Text style={[styles.alertTag, { backgroundColor: theme.amber }]}>{t('alert.tag')}</Text>
+                <Text style={styles.alertTitle}>{alert.event || alert.headline || t('alert.title')}</Text>
                 <Text style={styles.alertMeta}>
-                  {[alert.areas, alert.expires ? `until ${formatTime(alert.expires, settings.hourFormat)}` : null]
+                  {[alert.areas, alert.expires ? t('alert.until', { time: formatTime(alert.expires, settings.hourFormat) }) : null]
                     .filter(Boolean)
                     .join(' · ')}
                 </Text>
@@ -397,7 +394,7 @@ export default function Dashboard() {
 
             <View style={styles.footer}>
               <Text style={styles.footerText} numberOfLines={1}>
-                Src weatherapi · Radar rainviewer · Map OSM
+                {t('footer.source')}
               </Text>
               <Text style={styles.footerText}>
                 °{settings.tempUnit} · {speedLabel(settings.speedUnit)} · {settings.hourFormat}h

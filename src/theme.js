@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { StyleSheet } from 'react-native'
+import { I18nManager, StyleSheet } from 'react-native'
 import { useSettings } from './context/SettingsContext'
 
 // Same instrument-panel tokens as the web app
@@ -37,7 +37,7 @@ export const LIGHT = {
   night: '#e3e6ea',
 }
 
-export const FONTS = {
+const LATIN_FONTS = {
   mono: 'IBMPlexMono_400Regular',
   monoMedium: 'IBMPlexMono_500Medium',
   monoBold: 'IBMPlexMono_600SemiBold',
@@ -45,6 +45,22 @@ export const FONTS = {
   condMedium: 'IBMPlexSansCondensed_500Medium',
   condBold: 'IBMPlexSansCondensed_600SemiBold',
 }
+
+// Plex Mono and Plex Sans Condensed carry no Arabic glyphs, so the whole
+// interface moves to Plex Sans Arabic while the layout is mirrored. The
+// direction only changes on restart, so reading it once here is enough.
+const ARABIC_FONTS = {
+  mono: 'IBMPlexSansArabic_400Regular',
+  monoMedium: 'IBMPlexSansArabic_500Medium',
+  monoBold: 'IBMPlexSansArabic_600SemiBold',
+  cond: 'IBMPlexSansArabic_400Regular',
+  condMedium: 'IBMPlexSansArabic_500Medium',
+  condBold: 'IBMPlexSansArabic_600SemiBold',
+}
+
+export const RTL = I18nManager.isRTL
+
+export const FONTS = RTL ? ARABIC_FONTS : LATIN_FONTS
 
 export const RADIUS = 6
 export const GAP = 8
@@ -67,8 +83,9 @@ export function useStyles(factory) {
 export const label = (theme, size = 11) => ({
   fontFamily: FONTS.condBold,
   fontSize: size,
-  letterSpacing: size * 0.1,
-  textTransform: 'uppercase',
+  // tracking pulls joined Arabic letters apart, so it stays a Latin flourish
+  letterSpacing: RTL ? 0 : size * 0.1,
+  textTransform: RTL ? 'none' : 'uppercase',
   color: theme.muted,
 })
 

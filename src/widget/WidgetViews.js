@@ -2,10 +2,16 @@ import React from 'react'
 import { FlexWidget, SvgWidget, TextWidget } from 'react-native-android-widget'
 import { ICON_PATHS } from '../components/Icons'
 import { DARK, LIGHT } from '../theme'
+import { translator } from '../lib/i18n'
 
-const MONO = 'IBMPlexMono-Regular'
-const MONO_MEDIUM = 'IBMPlexMono-Medium'
-const COND = 'IBMPlexSansCondensed-SemiBold'
+const LATIN = { mono: 'IBMPlexMono-Regular', monoMedium: 'IBMPlexMono-Medium', cond: 'IBMPlexSansCondensed-SemiBold' }
+const ARABIC = { mono: 'IBMPlexSansArabic-Regular', monoMedium: 'IBMPlexSansArabic-Medium', cond: 'IBMPlexSansArabic-SemiBold' }
+
+// set once per render from the summary's language, then read by the text helpers
+let MONO = LATIN.mono
+let MONO_MEDIUM = LATIN.monoMedium
+let COND = LATIN.cond
+let UPPER = true
 
 const iconTint = (name, t) => {
   if (name === 'sun' || name === 'partly' || name === 'thunder') return t.amber
@@ -34,8 +40,8 @@ const Icon = ({ name, size, theme, strokeWidth }) => (
 
 const Label = ({ children, theme, size = 10, color }) => (
   <TextWidget
-    text={String(children).toUpperCase()}
-    style={{ fontFamily: COND, fontSize: size, letterSpacing: size * 0.09, color: color || theme.muted }}
+    text={UPPER ? String(children).toUpperCase() : String(children)}
+    style={{ fontFamily: COND, fontSize: size, letterSpacing: UPPER ? size * 0.09 : 0, color: color || theme.muted }}
   />
 )
 
@@ -60,9 +66,9 @@ const shell = theme => ({
   flexDirection: 'column',
 })
 
-const NoData = ({ theme }) => (
+const NoData = ({ theme, t }) => (
   <FlexWidget style={{ ...shell(theme), justifyContent: 'center', alignItems: 'center' }} clickAction="OPEN_APP">
-    <Label theme={theme} size={11}>Tap to load weather</Label>
+    <Label theme={theme} size={11}>{t('widget.tapToLoad')}</Label>
   </FlexWidget>
 )
 
@@ -217,7 +223,14 @@ const VIEWS = { WxCompact: Compact, WxCurrent: Current, WxHourly: Hourly, WxFore
 
 export function renderWidgetView(widgetName, data) {
   const theme = data?.theme === 'light' ? LIGHT : DARK
-  if (!data) return <NoData theme={theme} />
+  const arabic = (data?.language || 'en') === 'ar'
+  const faces = arabic ? ARABIC : LATIN
+  MONO = faces.mono
+  MONO_MEDIUM = faces.monoMedium
+  COND = faces.cond
+  UPPER = !arabic
+  const t = translator(data?.language || 'en')
+  if (!data) return <NoData theme={theme} t={t} />
   const View = VIEWS[widgetName] || Current
   return <View d={data} theme={theme} />
 }

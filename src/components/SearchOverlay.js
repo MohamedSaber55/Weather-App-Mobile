@@ -3,9 +3,10 @@ import { ActivityIndicator, FlatList, Modal, Pressable, Text, TextInput, View } 
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { Icon } from './Icons'
 import { IconButton } from './Tile'
-import { label, mono, RADIUS, useStyles } from '../theme'
+import { label, mono, RADIUS, RTL, useStyles } from '../theme'
 import { getSearchResults } from '../lib/api'
 import { useFavorites } from '../context/FavoritesContext'
+import { useI18n } from '../context/SettingsContext'
 import { useNetworkState } from 'expo-network'
 
 const makeStyles = t => ({
@@ -27,7 +28,7 @@ const makeStyles = t => ({
   group: { ...label(t, 10), color: t.dim, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 6 },
   item: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14 },
   itemName: { ...mono(t, 14), flexShrink: 0 },
-  itemRegion: { ...label(t, 11), color: t.dim, flex: 1, textAlign: 'right' },
+  itemRegion: { ...label(t, 11), color: t.dim, flex: 1, textAlign: RTL ? 'left' : 'right' },
   empty: { paddingHorizontal: 16, paddingVertical: 20, ...mono(t, 12), color: t.dim },
   separator: { height: 1, backgroundColor: t.border, marginHorizontal: 16 },
 })
@@ -35,6 +36,7 @@ const makeStyles = t => ({
 export default function SearchOverlay({ visible, onClose, onSelect }) {
   const { styles, theme } = useStyles(makeStyles)
   const { recents } = useFavorites()
+  const { t } = useI18n()
   const network = useNetworkState()
   const noConnection = network?.isConnected === false || network?.isInternetReachable === false
   const [text, setText] = useState('')
@@ -103,7 +105,7 @@ export default function SearchOverlay({ visible, onClose, onSelect }) {
               ref={inputRef}
               value={text}
               onChangeText={setText}
-              placeholder="Search city"
+              placeholder={t('search.placeholder')}
               placeholderTextColor={theme.dim}
               style={styles.input}
               autoCorrect={false}
@@ -113,14 +115,14 @@ export default function SearchOverlay({ visible, onClose, onSelect }) {
                 if (data[0]) choose(data[0])
                 else if (text.trim()) choose({ name: text.trim() })
               }}
-              accessibilityLabel="Search for a city"
+              accessibilityLabel={t('search.aria')}
             />
             {loading ? <ActivityIndicator size="small" color={theme.dim} /> : null}
           </View>
-          <IconButton name="close" onPress={onClose} accessibilityLabel="Close search" />
+          <IconButton name="close" onPress={onClose} accessibilityLabel={t('search.close')} />
         </View>
 
-        <Text style={styles.group}>{showRecents ? 'Recent' : 'Results'}</Text>
+        <Text style={styles.group}>{showRecents ? t('search.recent') : t('search.results')}</Text>
         <FlatList
           data={data}
           keyExtractor={(item, i) => `${item.lat}-${item.lon}-${item.name}-${i}`}
@@ -129,12 +131,12 @@ export default function SearchOverlay({ visible, onClose, onSelect }) {
           ListEmptyComponent={
             <Text style={styles.empty}>
               {noConnection
-                ? 'No connection — searching for new cities needs the internet. Saved and recent places still work.'
+                ? t('offline.search')
                 : showRecents
-                  ? 'Type at least 2 characters'
+                  ? t('search.short')
                   : loading
-                    ? 'Searching…'
-                    : `No places match “${text.trim()}”`}
+                    ? t('search.searching')
+                    : t('search.empty', { query: text.trim() })}
             </Text>
           }
           renderItem={({ item }) => (

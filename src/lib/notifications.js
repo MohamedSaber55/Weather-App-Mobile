@@ -1,17 +1,18 @@
 import { Platform } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Notifications from 'expo-notifications'
+import { translator } from './i18n'
 
 const CHANNEL_ID = 'weather-status'
 const NOTIFICATION_ID = 'weather-status-bar'
 const SETTINGS_KEY = 'weather_settings'
 
-export async function ensureChannel() {
+export async function ensureChannel(t = translator('en')) {
   if (Platform.OS !== 'android') return
   // MIN keeps it silent and collapsed at the bottom of the shade — a readout, not an alert
   await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-    name: 'Weather status',
-    description: 'Shows the current temperature in the status bar',
+    name: t('notif.channel'),
+    description: t('notif.channelDesc'),
     importance: Notifications.AndroidImportance.MIN,
     enableVibrate: false,
     showBadge: false,
@@ -32,12 +33,12 @@ export async function dismissStatusBar() {
   await Notifications.dismissNotificationAsync(NOTIFICATION_ID).catch(() => {})
 }
 
-async function statusBarEnabled() {
+async function readSettings() {
   try {
     const raw = await AsyncStorage.getItem(SETTINGS_KEY)
-    return raw ? Boolean(JSON.parse(raw).statusBar) : false
+    return raw ? JSON.parse(raw) : {}
   } catch {
-    return false
+    return {}
   }
 }
 
@@ -48,26 +49,28 @@ async function statusBarEnabled() {
  */
 export async function syncStatusBarNotification(data) {
   if (Platform.OS !== 'android' || !data) return
-  if (!(await statusBarEnabled())) {
+  const settings = await readSettings()
+  const t = translator(data.language || settings.language || 'en')
+  if (!settings.statusBar) {
     await dismissStatusBar()
     return
   }
   const permission = await Notifications.getPermissionsAsync()
   if (!permission.granted) return
 
-  await ensureChannel()
+  await ensureChannel(t)
   const extras = [
-    data.offline ? 'offline' : null,
+    data.offline ? t('meta.offline') : null,
     data.uvLabel ? `UV ${data.uv}` : null,
     data.aqiLabel ? `AQI ${data.aqiLabel}` : null,
-    `RH ${data.humidity}%`,
+    `${t('meta.rh')} ${data.humidity}%`,
   ].filter(Boolean)
 
   await Notifications.scheduleNotificationAsync({
     identifier: NOTIFICATION_ID,
     content: {
       title: `${data.temp}°${data.unit} · ${data.condition}`,
-      body: `${data.city} · feels ${data.feels}° · H ${data.hi} L ${data.lo} · ${extras.join(' · ')}`,
+      body: `${data.city} · ${t('label.feelsShort')} ${data.feels}° · ${t('label.hi')} ${data.hi} ${t('label.lo')} ${data.lo} · ${extras.join(' · ')}`,
       sticky: true,
       autoDismiss: false,
       color: '#f2af48',

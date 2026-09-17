@@ -4,9 +4,10 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import * as Location from 'expo-location'
 import { Icon } from './Icons'
 import { IconButton } from './Tile'
-import { FONTS, label, mono, RADIUS, useStyles, useTheme } from '../theme'
+import { FONTS, label, mono, RADIUS, RTL, useStyles, useTheme } from '../theme'
 import { getSearchResults } from '../lib/api'
 import { coordsLabel } from '../lib/units'
+import { useI18n } from '../context/SettingsContext'
 
 const WebView = Platform.OS === 'web' ? null : require('react-native-webview').WebView
 
@@ -49,7 +50,7 @@ const makeStyles = t => ({
   },
   picked: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   pickedText: { flex: 1, minWidth: 0 },
-  pickedName: { fontFamily: FONTS.condBold, fontSize: 16, letterSpacing: 0.4, textTransform: 'uppercase', color: t.text },
+  pickedName: { fontFamily: FONTS.condBold, fontSize: 16, letterSpacing: RTL ? 0 : 0.4, textTransform: RTL ? 'none' : 'uppercase', color: t.text },
   pickedCoords: { ...mono(t, 11), color: t.dim, marginTop: 2 },
   actions: { flexDirection: 'row', gap: 8 },
   button: {
@@ -117,6 +118,7 @@ function buildHtml({ lat, lon, theme }) {
 function Picker({ onClose, onPick, initial }) {
   const { styles, theme } = useStyles(makeStyles)
   const insets = useSafeAreaInsets()
+  const { t } = useI18n()
   const webRef = useRef(null)
   const [picked, setPicked] = useState(null)
   const [name, setName] = useState(null)
@@ -182,8 +184,8 @@ function Picker({ onClose, onPick, initial }) {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.head}>
-        <Text style={styles.title}>Pick a place on the map</Text>
-        <IconButton name="close" onPress={onClose} accessibilityLabel="Close map" />
+        <Text style={styles.title}>{t('map.title')}</Text>
+        <IconButton name="close" onPress={onClose} accessibilityLabel={t('map.close')} />
       </View>
 
       <View style={styles.map}>
@@ -205,7 +207,7 @@ function Picker({ onClose, onPick, initial }) {
             style={{ backgroundColor: theme.sunken }}
           />
         ) : null}
-        {!picked ? <Text style={styles.hint}>Tap anywhere on the map</Text> : null}
+        {!picked ? <Text style={styles.hint}>{t('map.tapHint')}</Text> : null}
       </View>
 
       <View style={[styles.footer, { paddingBottom: 16 + insets.bottom }]}>
@@ -213,12 +215,12 @@ function Picker({ onClose, onPick, initial }) {
           <Icon name="pin" size={18} color={picked ? theme.amber : theme.dim} />
           <View style={styles.pickedText}>
             <Text style={styles.pickedName} numberOfLines={1}>
-              {picked ? name?.name || (resolving ? 'Looking up…' : 'Dropped pin') : 'No place chosen'}
+              {picked ? name?.name || (resolving ? t('map.lookingUp') : t('map.pin')) : t('map.none')}
             </Text>
             <Text style={styles.pickedCoords}>
               {picked
                 ? [coordsLabel(picked.lat, picked.lon), name?.region, name?.country].filter(Boolean).join(' · ')
-                : 'Tap the map, or use your location'}
+                : t('map.tapOrLocate')}
             </Text>
           </View>
           {resolving ? <ActivityIndicator size="small" color={theme.dim} /> : null}
@@ -227,7 +229,7 @@ function Picker({ onClose, onPick, initial }) {
         <View style={styles.actions}>
           <Pressable style={styles.button} onPress={useMyLocation} disabled={locating} accessibilityRole="button">
             <Icon name={locating ? 'rotate' : 'locate'} size={14} color={theme.text} />
-            <Text style={styles.buttonText}>{locating ? 'Locating…' : 'My location'}</Text>
+            <Text style={styles.buttonText}>{locating ? t('header.locating') : t('map.myLocation')}</Text>
           </Pressable>
           <Pressable
             style={[styles.button, picked && styles.buttonPrimary]}
@@ -236,7 +238,7 @@ function Picker({ onClose, onPick, initial }) {
             accessibilityRole="button"
           >
             <Icon name="plus" size={14} color={picked ? '#0b0d10' : theme.dim} />
-            <Text style={picked ? styles.buttonPrimaryText : styles.buttonText}>Save place</Text>
+            <Text style={picked ? styles.buttonPrimaryText : styles.buttonText}>{t('map.save')}</Text>
           </Pressable>
         </View>
       </View>

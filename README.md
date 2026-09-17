@@ -90,6 +90,30 @@ offline shows that reading immediately instead of an error:
 The only empty case is a first run that has never been online — there is
 genuinely nothing saved yet, so it says so and waits for a pull-to-refresh.
 
+## Arabic and right to left
+
+Settings > Language switches the whole app between English and العربية. The
+strings live in `src/lib/i18n.js`, one table per language, and `useI18n()` hands
+components a `t(key)` plus localised day and month names.
+
+Three things beyond the wording:
+
+- **Layout.** Picking Arabic calls `I18nManager.forceRTL`, which mirrors every
+  row, drawer and sheet. React Native can only apply that at startup, so the
+  sheet says to close and reopen the app; the strings switch immediately either
+  way.
+- **Type.** IBM Plex Mono and Plex Sans Condensed carry no Arabic glyphs, so the
+  interface moves to IBM Plex Sans Arabic while Arabic is on (`src/theme.js`),
+  and uppercasing and letter tracking — Latin flourishes that break cursive
+  joins — are switched off.
+- **Readings.** Numbers, units, the chart and the compass stay left to right,
+  because that is how instrument panels read in both languages.
+
+Condition text ("Partly cloudy", "Patchy rain nearby") comes from WeatherAPI,
+which is asked for `lang=ar` and answers in Arabic. Widgets and the status-bar
+notification follow the same setting, with their own Arabic faces bundled for
+the widget runtime.
+
 ## Data
 
 [WeatherAPI.com](https://www.weatherapi.com) for weather, air quality and alerts;

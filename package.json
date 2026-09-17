@@ -4,6 +4,7 @@
   "main": "index.js",
   "dependencies": {
     "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
+    "@expo-google-fonts/ibm-plex-sans-arabic": "^0.4.2",
     "@expo-google-fonts/ibm-plex-sans-condensed": "^0.4.1",
     "@expo/metro-runtime": "~57.0.15",
     "@react-native-async-storage/async-storage": "2.2.0",

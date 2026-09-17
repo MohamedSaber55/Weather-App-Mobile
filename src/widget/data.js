@@ -3,6 +3,7 @@ import * as Network from 'expo-network'
 import { getWeather } from '../lib/api'
 import { conditionIconName } from '../components/Icons'
 import { aqiLevel, uvLevel } from '../lib/conditions'
+import { calendar, translator } from '../lib/i18n'
 import { clockHours, fixed1, formatTime, parseClock, speedLabel, speedValue, tempValue } from '../lib/units'
 
 const CACHE_KEY = 'weather_widget_cache'
@@ -11,7 +12,7 @@ const SETTINGS_KEY = 'weather_settings'
 const DEFAULT_CITY = 'beni suef'
 const FRESH_MS = 20 * 60 * 1000
 
-const DEFAULT_SETTINGS = { tempUnit: 'C', speedUnit: 'kmh', hourFormat: 24, theme: 'dark' }
+const DEFAULT_SETTINGS = { tempUnit: 'C', speedUnit: 'kmh', hourFormat: 24, theme: 'dark', language: 'en' }
 
 async function readSettings() {
   try {
@@ -32,6 +33,8 @@ export function summarize(data, settings) {
   if (!location || !current || !today) return null
 
   const unit = settings.tempUnit
+  const t = translator(settings.language)
+  const cal = calendar(settings.language)
   const nowHour = clockHours(location.localtime) ?? 0
   const isDay = current.is_day === 1
 
@@ -68,20 +71,21 @@ export function summarize(data, settings) {
     wind: `${Math.round(speedValue(current.wind_kph ?? 0, settings.speedUnit))} ${speedLabel(settings.speedUnit)}`,
     rain: today.day.daily_chance_of_rain ?? 0,
     uv: typeof current.uv === 'number' ? Math.round(current.uv) : null,
-    uvLabel: typeof current.uv === 'number' ? uvLevel(current.uv).label : null,
+    uvLabel: typeof current.uv === 'number' ? t(uvLevel(current.uv).key) : null,
     aqi: aqi != null ? aqiLevel(aqi).index : null,
-    aqiLabel: aqi != null ? aqiLevel(aqi).label : null,
+    aqiLabel: aqi != null ? t(aqiLevel(aqi).key) : null,
     sunrise: formatTime(today.astro?.sunrise, settings.hourFormat),
     sunset: formatTime(today.astro?.sunset, settings.hourFormat),
     hours,
     days: days.slice(0, 4).map((fd, i) => ({
-      label: i === 0 ? 'Today' : new Date(`${fd.date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short' }),
+      label: i === 0 ? t('label.today') : cal.days[new Date(`${fd.date}T12:00:00`).getDay()],
       hi: Math.round(tempValue(fd.day.maxtemp_c, unit)),
       lo: Math.round(tempValue(fd.day.mintemp_c, unit)),
       icon: conditionIconName(fd.day.condition.code, true, fd.day.condition.text),
       rain: fd.day.daily_chance_of_rain ?? 0,
     })),
     theme: settings.theme,
+    language: settings.language,
     savedAt: Date.now(),
   }
 }
@@ -117,7 +121,7 @@ export async function loadWidgetData({ force = false } = {}) {
   try {
     const settings = await readSettings()
     const city = (await AsyncStorage.getItem(CITY_KEY)) || DEFAULT_CITY
-    const data = await getWeather(city, { days: 4, aqi: true, alerts: false })
+    const data = await getWeather(city, { days: 4, aqi: true, alerts: false, lang: settings.language })
     const summary = await cacheSummary(data, settings)
     return summary || cached
   } catch {

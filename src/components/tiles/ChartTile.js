@@ -3,6 +3,7 @@ import { View } from 'react-native'
 import Svg, { Circle, G, Path, Rect, Text as SvgText } from 'react-native-svg'
 import { Tile } from '../Tile'
 import { FONTS, useTheme } from '../../theme'
+import { useI18n } from '../../context/SettingsContext'
 import { clamp, clockHours, fixed1, formatTime, parseClock, speedLabel, speedValue, tempValue } from '../../lib/units'
 
 const PAD = { l: 28, r: 8, t: 10, b: 22 }
@@ -24,6 +25,7 @@ function smoothPath(points) {
 
 export default function ChartTile({ day, current, location, settings, width }) {
   const theme = useTheme()
+  const { t } = useI18n()
   const [hover, setHover] = useState(null)
   const hours = day?.hour || []
   const unit = settings.tempUnit
@@ -75,7 +77,7 @@ export default function ChartTile({ day, current, location, settings, width }) {
         wind: speedValue(hourData.wind_kph ?? 0, settings.speedUnit),
       }
     : {
-        title: `${formatTime(location.localtime, settings.hourFormat)} · Now`,
+        title: `${formatTime(location.localtime, settings.hourFormat)} · ${t('label.now')}`,
         temp: tempValue(current.temp_c, unit),
         feels: tempValue(current.feelslike_c, unit),
         uv: current.uv,
@@ -97,7 +99,7 @@ export default function ChartTile({ day, current, location, settings, width }) {
   }
 
   return (
-    <Tile label="Temperature · 24 h" meta={`°${unit} · shaded = night`}>
+    <Tile label={t('tile.chart')} meta={t('meta.shadedNight', { unit })}>
       <View
         onStartShouldSetResponder={() => true}
         onMoveShouldSetResponder={() => true}
@@ -146,10 +148,10 @@ export default function ChartTile({ day, current, location, settings, width }) {
               {fixed1(tip.temp)}°
             </SvgText>
             <SvgText x={58} y={35} fontSize="10" fontFamily={FONTS.mono} fill={theme.muted}>
-              feels {fixed1(tip.feels)}
+              {t('label.feelsShort')} {fixed1(tip.feels)}
             </SvgText>
             <SvgText x={9} y={50} fontSize="9" fontFamily={FONTS.mono} fill={theme.muted}>
-              UV {tip.uv ?? '--'} · Rain {tip.rain}% · {Math.round(tip.wind)} {speedLabel(settings.speedUnit)}
+              UV {tip.uv ?? '--'} · {t('label.rain')} {tip.rain}% · {Math.round(tip.wind)} {speedLabel(settings.speedUnit)}
             </SvgText>
           </G>
           {hours.map((h, i) =>

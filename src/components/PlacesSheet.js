@@ -3,8 +3,9 @@ import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Icon } from './Icons'
 import { IconButton } from './Tile'
-import { FONTS, label, mono, RADIUS, useStyles } from '../theme'
+import { FONTS, label, mono, RADIUS, RTL, useStyles } from '../theme'
 import { placeKey, useFavorites } from '../context/FavoritesContext'
+import { useI18n } from '../context/SettingsContext'
 
 const makeStyles = t => ({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
@@ -40,7 +41,7 @@ const makeStyles = t => ({
   },
   rowActive: { borderColor: t.amber },
   rowText: { flex: 1, minWidth: 0 },
-  name: { fontFamily: FONTS.condBold, fontSize: 15, letterSpacing: 0.4, textTransform: 'uppercase', color: t.text },
+  name: { fontFamily: FONTS.condBold, fontSize: 15, letterSpacing: RTL ? 0 : 0.4, textTransform: RTL ? 'none' : 'uppercase', color: t.text },
   region: { ...mono(t, 10), color: t.dim, marginTop: 2 },
   tag: {
     ...label(t, 9),
@@ -73,17 +74,18 @@ const makeStyles = t => ({
 function Sheet({ onClose, onSelectPlace, onAddBySearch, onAddByMap, currentName }) {
   const { styles, theme } = useStyles(makeStyles)
   const insets = useSafeAreaInsets()
+  const { t } = useI18n()
   const { favorites, defaultPlace, setDefaultPlace, removeFavorite } = useFavorites()
 
   const isDefault = place => defaultPlace && placeKey(defaultPlace) === placeKey(place)
   const isCurrent = place => String(place.name).toLowerCase() === String(currentName || '').toLowerCase()
 
   return (
-    <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close places">
+    <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('places.closeAria')}>
       <Pressable style={[styles.sheet, { marginBottom: insets.bottom }]} onPress={() => {}}>
         <View style={styles.head}>
-          <Text style={styles.title}>Places</Text>
-          <IconButton name="close" onPress={onClose} accessibilityLabel="Close places" />
+          <Text style={styles.title}>{t('places.title')}</Text>
+          <IconButton name="close" onPress={onClose} accessibilityLabel={t('places.closeAria')} />
         </View>
 
         <ScrollView
@@ -92,9 +94,7 @@ function Sheet({ onClose, onSelectPlace, onAddBySearch, onAddByMap, currentName 
           bounces={false}
         >
           {favorites.length === 0 ? (
-            <Text style={styles.empty}>
-              No saved places yet. Add one by searching for a city, or by tapping a spot on the map.
-            </Text>
+            <Text style={styles.empty}>{t('places.emptyMobile')}</Text>
           ) : (
             favorites.map(place => (
               <Pressable
@@ -105,7 +105,7 @@ function Sheet({ onClose, onSelectPlace, onAddBySearch, onAddByMap, currentName 
                   onClose()
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`Show weather for ${place.name}`}
+                accessibilityLabel={t('places.show', { name: place.name })}
               >
                 <Icon name="pin" size={16} color={isCurrent(place) ? theme.amber : theme.dim} />
                 <View style={styles.rowText}>
@@ -118,13 +118,13 @@ function Sheet({ onClose, onSelectPlace, onAddBySearch, onAddByMap, currentName 
                 </View>
 
                 {isDefault(place) ? (
-                  <Text style={styles.tag}>Default</Text>
+                  <Text style={styles.tag}>{t('places.default')}</Text>
                 ) : (
                   <Pressable
                     style={styles.rowAction}
                     onPress={() => setDefaultPlace(place)}
                     accessibilityRole="button"
-                    accessibilityLabel={`Make ${place.name} the default place`}
+                    accessibilityLabel={t('places.makeDefault', { name: place.name })}
                     hitSlop={6}
                   >
                     <Icon name="home" size={16} color={theme.dim} />
@@ -135,7 +135,7 @@ function Sheet({ onClose, onSelectPlace, onAddBySearch, onAddByMap, currentName 
                   style={styles.rowAction}
                   onPress={() => removeFavorite(place)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Remove ${place.name}`}
+                  accessibilityLabel={t('places.removeName', { name: place.name })}
                   hitSlop={6}
                 >
                   <Icon name="trash" size={16} color={theme.dim} />
@@ -147,17 +147,15 @@ function Sheet({ onClose, onSelectPlace, onAddBySearch, onAddByMap, currentName 
           <View style={styles.addRow}>
             <Pressable style={styles.add} onPress={onAddBySearch} accessibilityRole="button">
               <Icon name="search" size={14} color={theme.text} />
-              <Text style={styles.addText}>Search</Text>
+              <Text style={styles.addText}>{t('places.search')}</Text>
             </Pressable>
             <Pressable style={styles.add} onPress={onAddByMap} accessibilityRole="button">
               <Icon name="pin" size={14} color={theme.text} />
-              <Text style={styles.addText}>Pick on map</Text>
+              <Text style={styles.addText}>{t('places.map')}</Text>
             </Pressable>
           </View>
 
-          <Text style={styles.note}>
-            The house icon sets the place the app opens on. Tap a row to show its weather.
-          </Text>
+          <Text style={styles.note}>{t('places.noteMobile')}</Text>
         </ScrollView>
       </Pressable>
     </Pressable>

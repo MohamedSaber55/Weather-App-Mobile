@@ -3,16 +3,16 @@ import { ActivityIndicator, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { useFonts } from 'expo-font'
-import {
-  IBMPlexMono_400Regular,
-  IBMPlexMono_500Medium,
-  IBMPlexMono_600SemiBold,
-} from '@expo-google-fonts/ibm-plex-mono'
-import {
-  IBMPlexSansCondensed_400Regular,
-  IBMPlexSansCondensed_500Medium,
-  IBMPlexSansCondensed_600SemiBold,
-} from '@expo-google-fonts/ibm-plex-sans-condensed'
+// deep imports: the package roots pull in every weight and italic
+import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono/400Regular'
+import { IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono/500Medium'
+import { IBMPlexMono_600SemiBold } from '@expo-google-fonts/ibm-plex-mono/600SemiBold'
+import { IBMPlexSansCondensed_400Regular } from '@expo-google-fonts/ibm-plex-sans-condensed/400Regular'
+import { IBMPlexSansCondensed_500Medium } from '@expo-google-fonts/ibm-plex-sans-condensed/500Medium'
+import { IBMPlexSansCondensed_600SemiBold } from '@expo-google-fonts/ibm-plex-sans-condensed/600SemiBold'
+import { IBMPlexSansArabic_400Regular } from '@expo-google-fonts/ibm-plex-sans-arabic/400Regular'
+import { IBMPlexSansArabic_500Medium } from '@expo-google-fonts/ibm-plex-sans-arabic/500Medium'
+import { IBMPlexSansArabic_600SemiBold } from '@expo-google-fonts/ibm-plex-sans-arabic/600SemiBold'
 import { SettingsProvider, useSettings } from './src/context/SettingsContext'
 import { FavoritesProvider } from './src/context/FavoritesContext'
 import Dashboard from './src/screens/Dashboard'
@@ -46,6 +46,10 @@ export default function App() {
     IBMPlexSansCondensed_400Regular,
     IBMPlexSansCondensed_500Medium,
     IBMPlexSansCondensed_600SemiBold,
+    // Plex Mono and Plex Sans Condensed have no Arabic glyphs
+    IBMPlexSansArabic_400Regular,
+    IBMPlexSansArabic_500Medium,
+    IBMPlexSansArabic_600SemiBold,
   })
 
   if (!fontsLoaded) {

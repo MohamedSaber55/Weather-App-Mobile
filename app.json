@@ -37,7 +37,10 @@
           "fonts": [
             "./assets/fonts/IBMPlexMono-Regular.ttf",
             "./assets/fonts/IBMPlexMono-Medium.ttf",
-            "./assets/fonts/IBMPlexSansCondensed-SemiBold.ttf"
+            "./assets/fonts/IBMPlexSansCondensed-SemiBold.ttf",
+            "./assets/fonts/IBMPlexSansArabic-Regular.ttf",
+            "./assets/fonts/IBMPlexSansArabic-Medium.ttf",
+            "./assets/fonts/IBMPlexSansArabic-SemiBold.ttf"
           ],
           "widgets": [
             {

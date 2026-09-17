@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { IconButton, Note, Tile } from '../Tile'
-import { mono, useStyles } from '../../theme'
+import { mono, RTL, useStyles } from '../../theme'
 import { coordsLabel } from '../../lib/units'
+import { useI18n } from '../../context/SettingsContext'
 
 // react-native-webview has no web build; the web preview shows a note instead
 const WebView = Platform.OS === 'web' ? null : require('react-native-webview').WebView
@@ -96,11 +97,12 @@ const makeStyles = t => ({
   frameBar: { height: 10, backgroundColor: t.border },
   frameBarPast: { backgroundColor: t.muted, opacity: 0.5 },
   frameBarCurrent: { height: 20, backgroundColor: t.amber, opacity: 1 },
-  opacity: { ...mono(t, 11), color: t.muted, textTransform: 'uppercase' },
+  opacity: { ...mono(t, 11), color: t.muted, textTransform: RTL ? 'none' : 'uppercase' },
 })
 
 export default function RadarTile({ lat, lon, name, offline = false }) {
   const { styles, theme } = useStyles(makeStyles)
+  const { t } = useI18n()
   const webRef = useRef(null)
   const [meta, setMeta] = useState(null)
   const [frameIdx, setFrameIdx] = useState(-1)
@@ -144,17 +146,19 @@ export default function RadarTile({ lat, lon, name, offline = false }) {
   const frame = frames[frameIdx]
   const offsetMin = frame ? Math.round((frame.time * 1000 - Date.now()) / 60000) : null
   const metaLabel = offline
-    ? 'Offline'
-    : offsetMin == null ? 'RainViewer' : `RainViewer · ${offsetMin > 0 ? '+' : '−'}${Math.abs(offsetMin)} min`
+    ? t('meta.offline')
+    : offsetMin == null
+      ? t('radar.source')
+      : t('radar.offset', { offset: `${offsetMin > 0 ? '+' : '−'}${Math.abs(offsetMin)}` })
 
   const cycleOpacity = () => setOpacity(OPACITY_STEPS[(OPACITY_STEPS.indexOf(opacity) + 1) % OPACITY_STEPS.length])
 
   return (
-    <Tile label="Radar" meta={metaLabel}>
+    <Tile label={t('tile.radar')} meta={metaLabel}>
       <View style={styles.map}>
         {offline ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <Note>The radar map needs a connection. It will load once you are back online.</Note>
+            <Note>{t('radar.offlineLong')}</Note>
           </View>
         ) : WebView ? (
           <WebView
@@ -171,7 +175,7 @@ export default function RadarTile({ lat, lon, name, offline = false }) {
           />
         ) : (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <Note>The radar map runs on the phone (Expo Go), not in this web preview.</Note>
+            <Note>{t('radar.preview')}</Note>
           </View>
         )}
         <Text style={styles.coords}>{coordsLabel(lat, lon)}</Text>
@@ -184,7 +188,7 @@ export default function RadarTile({ lat, lon, name, offline = false }) {
           color={theme.text}
           disabled={frames.length < 2}
           onPress={() => setPlaying(p => !p)}
-          accessibilityLabel={playing ? 'Pause radar loop' : 'Play radar loop'}
+          accessibilityLabel={playing ? t('radar.pause') : t('radar.play')}
           style={{ width: 36, height: 36 }}
         />
         <View style={styles.frames}>
@@ -197,7 +201,7 @@ export default function RadarTile({ lat, lon, name, offline = false }) {
                 setFrameIdx(i)
               }}
               accessibilityRole="button"
-              accessibilityLabel={`Radar frame ${i + 1} of ${frames.length}`}
+              accessibilityLabel={t('radar.frame', { index: i + 1, total: frames.length })}
             >
               <View
                 style={[
@@ -209,8 +213,8 @@ export default function RadarTile({ lat, lon, name, offline = false }) {
             </Pressable>
           ))}
         </View>
-        <Pressable onPress={cycleOpacity} accessibilityRole="button" accessibilityLabel={`Radar opacity ${Math.round(opacity * 100)} percent, change`}>
-          <Text style={styles.opacity}>Opacity {Math.round(opacity * 100)}%</Text>
+        <Pressable onPress={cycleOpacity} accessibilityRole="button" accessibilityLabel={t('radar.opacityAria', { percent: Math.round(opacity * 100) })}>
+          <Text style={styles.opacity}>{t('radar.opacity', { percent: Math.round(opacity * 100) })}</Text>
         </Pressable>
       </View>
     </Tile>
